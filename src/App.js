@@ -15,11 +15,11 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route index element={<Navigate to="/institutes" replace />} />
           <Route path="/institutes" element={<InstituteList />} />
-          <Route path="/institutes/create" element={<CreateInstitute />} />
+          <Route path="/institutes/create" element={<Navigate to="/institutes/create/1" replace />} />
           <Route path="/institutes/create/:step" element={<CreateInstitute />} />
 
           <Route path="/courses" element={<CourseList />} />
-          <Route path="/courses/create" element={<CreateCourse />} />
+          <Route path="/courses/create" element={<Navigate to="/courses/create/1" replace />} />
           <Route path="/courses/create/:step" element={<CreateCourse />} />
 
           <Route path="*" element={<Navigate to="/institutes" replace />} />
