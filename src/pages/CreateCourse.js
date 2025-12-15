@@ -29,9 +29,6 @@ function wordCount(str) {
 export default function CreateCourse() {
   const navigate = useNavigate();
   const { step } = useParams();
-  const current = useMemo(() => clampStep(step ?? '1'), [step]);
-  if (!step) return <Navigate to="/courses/create/1" replace />;
-
   const [desc, setDesc] = useState('');
   const [modules, setModules] = useState(() => [
     {
@@ -41,6 +38,11 @@ export default function CreateCourse() {
       expanded: true,
     },
   ]);
+
+  // IMPORTANT: keep hooks ordering stable across the redirect from `/courses/create`
+  // to `/courses/create/1` by computing `current` after hooks.
+  const current = useMemo(() => clampStep(step ?? '1'), [step]);
+  if (!step) return <Navigate to="/courses/create/1" replace />;
 
   const goNext = () => navigate(`/courses/create/${Math.min(2, current + 1)}`);
   const goPrev = () => navigate(`/courses/create/${Math.max(1, current - 1)}`);
