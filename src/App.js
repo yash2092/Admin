@@ -1,24 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import './styles/dashboard.css';
+
+import DashboardLayout from './components/layout/DashboardLayout';
+import CourseList from './pages/CourseList';
+import CreateCourse from './pages/CreateCourse';
+import CreateInstitute from './pages/CreateInstitute';
+import InstituteList from './pages/InstituteList';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<DashboardLayout />}>
+          <Route index element={<Navigate to="/institutes" replace />} />
+          <Route path="/institutes" element={<InstituteList />} />
+          <Route path="/institutes/create" element={<CreateInstitute />} />
+          <Route path="/institutes/create/:step" element={<CreateInstitute />} />
+
+          <Route path="/courses" element={<CourseList />} />
+          <Route path="/courses/create" element={<CreateCourse />} />
+          <Route path="/courses/create/:step" element={<CreateCourse />} />
+
+          <Route path="*" element={<Navigate to="/institutes" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
