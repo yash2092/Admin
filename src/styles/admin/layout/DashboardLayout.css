@@ -1,0 +1,32 @@
+/* Shell */
+.dashboardShell {
+  min-height: 100%;
+  display: flex;
+}
+
+/* Main area */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  padding: 22px;
+}
+
+@media (max-width: 640px) {
+  .content { padding: 14px; }
+}
+
+/* Mobile backdrop (rendered by DashboardLayout) */
+@media (max-width: 860px) {
+  .sidebarBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    border: none;
+    background: rgba(17, 24, 39, 0.35);
+  }
+}

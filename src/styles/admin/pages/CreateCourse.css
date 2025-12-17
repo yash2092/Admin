@@ -1,0 +1,108 @@
+.createCourseGrid {
+  margin-top: 2px;
+}
+
+.createCourseFieldFull {
+  grid-column: 1 / -1;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.createCourseWordCount {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.createCourseModulesError {
+  margin-bottom: 10px;
+}
+
+.createCourseModuleCard {
+  margin-bottom: 14px;
+}
+
+.createCourseModuleActions {
+  gap: 8px;
+}
+
+.createCourseModuleGrid {
+  gap: 10px;
+}
+
+.createCourseNameHeader {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.createCourseFileName {
+  color: var(--muted);
+}
+
+.createCourseFooterTop {
+  margin-top: 16px;
+}
+
+.fileRowInlineInput {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* Module builder */
+.moduleCard {
+  padding: 16px;
+}
+
+.moduleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.moduleBadge {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--dark);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.moduleTitle {
+  font-weight: 700;
+}
+
+.moduleHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 12px;
+  background: #fff;
+}

@@ -1,0 +1,14 @@
+.createInstituteGrid {
+  margin-top: 12px;
+}
+
+.createInstituteFieldFull {
+  grid-column: 1 / -1;
+}
+
+.createInstituteSectionTop {
+  margin-top: 18px;
+}
+
+.createInstituteSpacer220 { height: 220px; }
+.createInstituteSpacer140 { height: 140px; }

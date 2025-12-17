@@ -1,0 +1,65 @@
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: rgba(16, 24, 40, 0.03);
+}
+
+.btnDark {
+  background: var(--dark);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btnDark:hover {
+  background: var(--dark-2);
+}
+
+.btnAccent {
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.btnAccent:hover {
+  background: var(--accent-strong);
+}
+
+.btnSmall {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btnIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.iconBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: rgba(16, 24, 40, 0.03);
+}

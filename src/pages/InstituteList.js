@@ -2,6 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconPencil, IconPlus, IconSearch, IconTrash } from '../components/ui/Icons';
 import { loadList, removeById, saveList, storageKey } from '../utils/storage';
+import '../styles/admin/ui/Cards.css';
+import '../styles/admin/ui/Controls.css';
+import '../styles/admin/ui/Buttons.css';
+import '../styles/admin/ui/Tables.css';
+import '../styles/admin/pages/InstituteList.css';
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -42,7 +47,7 @@ export default function InstituteList() {
     <div>
       <div className="pageTitle">Institute List</div>
 
-      <div className="row" style={{ marginBottom: 14 }}>
+      <div className="row instituteListSearchRow">
         <div className="searchWrap">
           <input className="search" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           <span className="searchIcon" aria-hidden="true">
@@ -61,18 +66,18 @@ export default function InstituteList() {
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: 90 }}>ID No.</th>
+                <th className="instituteListIdCol">ID No.</th>
                 <th>Institute Name</th>
                 <th>Trademark</th>
                 <th>Created By</th>
                 <th>Created on</th>
-                <th style={{ width: 120, textAlign: 'right' }}>Action</th>
+                <th className="instituteListActionCol">Action</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ color: 'var(--muted)' }}>
+                  <td colSpan={6} className="instituteListEmptyCell">
                     No institutes found.
                   </td>
                 </tr>

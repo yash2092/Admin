@@ -1,0 +1,16 @@
+.pageTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 8px 0 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.cardPad {
+  padding: 16px;
+}

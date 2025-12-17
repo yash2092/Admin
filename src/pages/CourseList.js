@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconPencil, IconPlus, IconSearch, IconTrash } from '../components/ui/Icons';
 import { loadList, removeById, saveList, storageKey } from '../utils/storage';
+import '../styles/admin/ui/Cards.css';
+import '../styles/admin/ui/Controls.css';
+import '../styles/admin/ui/Buttons.css';
+import '../styles/admin/pages/CourseList.css';
 
 export default function CourseList() {
   const navigate = useNavigate();
@@ -27,14 +31,14 @@ export default function CourseList() {
 
   return (
     <div>
-      <div className="row" style={{ marginBottom: 10 }}>
-        <div className="pageTitle" style={{ margin: 0 }}>
+      <div className="row courseListHeaderRow">
+        <div className="pageTitle courseListTitle">
           Course List
         </div>
         <div />
       </div>
 
-      <div className="row" style={{ marginBottom: 14 }}>
+      <div className="row courseListSearchRow">
         <div className="searchWrap">
           <input className="search" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           <span className="searchIcon" aria-hidden="true">
@@ -50,7 +54,7 @@ export default function CourseList() {
 
       <div className="cardGrid">
         {filtered.length === 0 ? (
-          <div className="card cardPad" style={{ gridColumn: '1 / -1', color: 'var(--muted)' }}>
+          <div className="card cardPad courseListEmptyState">
             No courses found.
           </div>
         ) : (

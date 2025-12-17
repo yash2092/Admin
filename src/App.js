@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import './styles/admin/dashboard.css';
 
 import DashboardLayout from './components/layout/DashboardLayout';
 import RequireAdminAuth from './components/auth/RequireAdminAuth';

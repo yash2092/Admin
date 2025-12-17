@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../styles/admin/ui/Stepper.css';
 
 export default function Stepper({ steps, activeIndex = 0 }) {
   return (

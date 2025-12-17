@@ -4,6 +4,10 @@ import Stepper from '../components/ui/Stepper';
 import { IconUpload } from '../components/ui/Icons';
 import { loadList, makeId, saveList, storageKey, upsertById, withTimestamps } from '../utils/storage';
 import { validateInstitute } from '../utils/validators';
+import '../styles/admin/ui/Cards.css';
+import '../styles/admin/ui/Forms.css';
+import '../styles/admin/ui/Buttons.css';
+import '../styles/admin/pages/CreateInstitute.css';
 
 const steps = [
   { key: '1', label: 'Basic\nDetails' },
@@ -109,7 +113,7 @@ export default function CreateInstitute() {
         {current === 1 ? (
           <>
             <div className="sectionTitle">Basic Details</div>
-            <div className="formGrid2" style={{ marginTop: 12 }}>
+            <div className="formGrid2 createInstituteGrid">
               <div className="field">
                 <div className="label">Name of Institute*</div>
                 <input
@@ -172,7 +176,7 @@ export default function CreateInstitute() {
                 />
                 {errors.email ? <div className="errorText">{errors.email}</div> : null}
               </div>
-              <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <div className="field createInstituteFieldFull">
                 <div className="label">Company logo*</div>
                 <div className="fileRow">
                   <div className="fileMeta">No file uploaded</div>
@@ -212,7 +216,7 @@ export default function CreateInstitute() {
         {current === 2 ? (
           <>
             <div className="sectionTitle">Institute Administration Details</div>
-            <div className="formGrid2" style={{ marginTop: 12 }}>
+            <div className="formGrid2 createInstituteGrid">
               <div className="field">
                 <div className="label">Name</div>
                 <input
@@ -275,7 +279,7 @@ export default function CreateInstitute() {
           <>
             <div className="sectionTitle">Permissions</div>
             <div className="subTitle"> </div>
-            <div style={{ height: 220 }} />
+            <div className="createInstituteSpacer220" />
 
             <div className="footerActions">
               <button
@@ -305,7 +309,7 @@ export default function CreateInstitute() {
         {current === 4 ? (
           <>
             <div className="sectionTitle">Basic Details</div>
-            <div className="formGrid2" style={{ marginTop: 12 }}>
+            <div className="formGrid2 createInstituteGrid">
               <div className="field">
                 <div className="label">Name of Institute*</div>
                 <input className="input" value={form.name} readOnly />
@@ -334,7 +338,7 @@ export default function CreateInstitute() {
                 <div className="label">Email</div>
                 <input className="input" value={form.email} readOnly />
               </div>
-              <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <div className="field createInstituteFieldFull">
                 <div className="label">Company logo*</div>
                 <div className="fileRow">
                   <div className="fileMeta">No file uploaded</div>
@@ -345,10 +349,10 @@ export default function CreateInstitute() {
               </div>
             </div>
 
-            <div className="sectionTitle" style={{ marginTop: 18 }}>
+            <div className="sectionTitle createInstituteSectionTop">
               Institute Administration Details
             </div>
-            <div className="formGrid2" style={{ marginTop: 12 }}>
+            <div className="formGrid2 createInstituteGrid">
               <div className="field">
                 <div className="label">Name</div>
                 <input className="input" value={form.adminName} readOnly />
@@ -364,10 +368,10 @@ export default function CreateInstitute() {
               <div />
             </div>
 
-            <div className="sectionTitle" style={{ marginTop: 18 }}>
+            <div className="sectionTitle createInstituteSectionTop">
               Permissions
             </div>
-            <div style={{ height: 140 }} />
+            <div className="createInstituteSpacer140" />
 
             <div className="footerActions">
               <button

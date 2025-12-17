@@ -10,6 +10,10 @@ import {
 } from '../components/ui/Icons';
 import { loadList, makeId, saveList, storageKey, upsertById, withTimestamps } from '../utils/storage';
 import { validateCourse, wordCount } from '../utils/validators';
+import '../styles/admin/ui/Cards.css';
+import '../styles/admin/ui/Forms.css';
+import '../styles/admin/ui/Buttons.css';
+import '../styles/admin/pages/CreateCourse.css';
 
 const steps = [
   { key: '1', label: 'Course Details' },
@@ -137,8 +141,8 @@ export default function CreateCourse() {
 
       {current === 1 ? (
         <div className="card cardPad">
-          <div className="formGrid2" style={{ marginTop: 2 }}>
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
+          <div className="formGrid2 createCourseGrid">
+            <div className="field createCourseFieldFull">
               <div className="label">Name of the Course</div>
               <input
                 className={errors.name ? 'input inputError' : 'input'}
@@ -163,7 +167,7 @@ export default function CreateCourse() {
                   id="demoVideoInput"
                   type="file"
                   accept="video/*"
-                  style={{ display: 'none' }}
+                  className="hiddenFileInput"
                   onChange={(e) => updateField('demoVideoName', e.target.files?.[0]?.name || '')}
                 />
               </div>
@@ -184,7 +188,7 @@ export default function CreateCourse() {
               {errors.category ? <div className="errorText">{errors.category}</div> : null}
             </div>
 
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <div className="field createCourseFieldFull">
               <div className="label">Teacher name</div>
               <input
                 className={errors.teacher ? 'input inputError' : 'input'}
@@ -194,7 +198,7 @@ export default function CreateCourse() {
               {errors.teacher ? <div className="errorText">{errors.teacher}</div> : null}
             </div>
 
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <div className="field createCourseFieldFull">
               <div className="label">Subject description</div>
               <textarea
                 className={errors.description ? 'textarea inputError' : 'textarea'}
@@ -202,7 +206,7 @@ export default function CreateCourse() {
                 onChange={(e) => updateField('description', e.target.value)}
               />
               {errors.description ? <div className="errorText">{errors.description}</div> : null}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', color: 'var(--muted)', fontSize: 11 }}>
+              <div className="createCourseWordCount">
                 Word limit {wordCount(form.description)} / 500
               </div>
             </div>
@@ -236,12 +240,12 @@ export default function CreateCourse() {
 
       {current === 2 ? (
         <div className="card cardPad">
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{form.name || 'Course'}</div>
+          <div className="createCourseNameHeader">{form.name || 'Course'}</div>
 
-          {errors.modules ? <div className="errorText" style={{ marginBottom: 10 }}>{errors.modules}</div> : null}
+          {errors.modules ? <div className="errorText createCourseModulesError">{errors.modules}</div> : null}
 
           {form.modules.map((m, idx) => (
-            <div className="card" style={{ marginBottom: 14 }} key={`module-${idx}`}>
+            <div className="card createCourseModuleCard" key={`module-${idx}`}>
               <div className="moduleCard">
                 <div className="moduleHeader">
                   <div className="moduleHeaderLeft">
@@ -249,7 +253,7 @@ export default function CreateCourse() {
                     <div className="moduleTitle">{m.title || `Module ${idx + 1}`}</div>
                   </div>
 
-                  <div className="actions" style={{ gap: 8 }}>
+                  <div className="actions createCourseModuleActions">
                     <button
                       className="iconBtn"
                       aria-label={m.expanded ? 'Collapse' : 'Expand'}
@@ -275,8 +279,8 @@ export default function CreateCourse() {
 
                 {m.expanded ? (
                   <div>
-                    <div className="formGrid2" style={{ gap: 10 }}>
-                      <div className="field" style={{ gridColumn: '1 / -1' }}>
+                    <div className="formGrid2 createCourseModuleGrid">
+                      <div className="field createCourseFieldFull">
                         <div className="label">Module Title</div>
                         <input
                           className={errors[`modules.${idx}.title`] ? 'input inputError' : 'input'}
@@ -287,14 +291,13 @@ export default function CreateCourse() {
                           <div className="errorText">{errors[`modules.${idx}.title`]}</div>
                         ) : null}
                       </div>
-                      <div className="field" style={{ gridColumn: '1 / -1' }}>
+                      <div className="field createCourseFieldFull">
                         <div className="label">Video Title</div>
                         <div className="fileRow">
                           <input
-                            className="input"
+                            className="input fileRowInlineInput"
                             value={m.videoTitle}
                             onChange={(e) => updateModule(idx, { videoTitle: e.target.value })}
-                            style={{ border: 'none', background: 'transparent', padding: 0 }}
                           />
                           <button
                             className="btn btnSmall"
@@ -307,21 +310,20 @@ export default function CreateCourse() {
                             id={`moduleVideo-${idx}`}
                             type="file"
                             accept="video/*"
-                            style={{ display: 'none' }}
+                            className="hiddenFileInput"
                             onChange={(e) => updateModule(idx, { videoFileName: e.target.files?.[0]?.name || '' })}
                           />
                         </div>
-                        {m.videoFileName ? <div className="helper" style={{ color: 'var(--muted)' }}>{m.videoFileName}</div> : null}
+                        {m.videoFileName ? <div className="helper createCourseFileName">{m.videoFileName}</div> : null}
                       </div>
 
-                      <div className="field" style={{ gridColumn: '1 / -1' }}>
+                      <div className="field createCourseFieldFull">
                         <div className="label">Study Material Title</div>
                         <div className="fileRow">
                           <input
-                            className="input"
+                            className="input fileRowInlineInput"
                             value={m.studyTitle}
                             onChange={(e) => updateModule(idx, { studyTitle: e.target.value })}
-                            style={{ border: 'none', background: 'transparent', padding: 0 }}
                           />
                           <button
                             className="btn btnSmall"
@@ -333,11 +335,11 @@ export default function CreateCourse() {
                           <input
                             id={`moduleStudy-${idx}`}
                             type="file"
-                            style={{ display: 'none' }}
+                            className="hiddenFileInput"
                             onChange={(e) => updateModule(idx, { studyFileName: e.target.files?.[0]?.name || '' })}
                           />
                         </div>
-                        {m.studyFileName ? <div className="helper" style={{ color: 'var(--muted)' }}>{m.studyFileName}</div> : null}
+                        {m.studyFileName ? <div className="helper createCourseFileName">{m.studyFileName}</div> : null}
                       </div>
                     </div>
 
@@ -370,7 +372,7 @@ export default function CreateCourse() {
             Add New Module
           </button>
 
-          <div className="footerActions" style={{ marginTop: 16 }}>
+          <div className="footerActions createCourseFooterTop">
             <button
               className="btn"
               type="button"
