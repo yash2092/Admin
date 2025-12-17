@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import Stepper from '../components/ui/Stepper';
 import { IconUpload } from '../components/ui/Icons';
+import { loadList, makeId, saveList, storageKey, upsertById, withTimestamps } from '../utils/storage';
+import { validateInstitute } from '../utils/validators';
 
 const steps = [
   { key: '1', label: 'Basic\nDetails' },
@@ -19,10 +21,10 @@ function clampStep(s) {
 
 export default function CreateInstitute() {
   const navigate = useNavigate();
-  const { step } = useParams();
+  const { step, id } = useParams();
 
-  // Keep the form local (mock-only) but stable per render.
-  const [form] = useState(() => ({
+  const [form, setForm] = useState(() => ({
+    id: '',
     name: '',
     type: '',
     trademark: '',
@@ -32,19 +34,74 @@ export default function CreateInstitute() {
     adminName: '',
     adminContact: '',
     adminEmail: '',
+    status: 'draft',
   }));
+  const [errors, setErrors] = useState({});
 
   const current = useMemo(() => clampStep(step ?? '1'), [step]);
-  if (!step) return <Navigate to="/institutes/create/1" replace />;
+  const shouldRedirect = !step;
+  const redirectTo = id ? `/institutes/${id}/edit/1` : '/institutes/create/1';
 
   const activeIndex = current - 1;
+  const effectiveId = id || form.id;
 
-  const goNext = () => navigate(`/institutes/create/${Math.min(4, current + 1)}`);
-  const goPrev = () => navigate(`/institutes/create/${Math.max(1, current - 1)}`);
+  const institutesKey = useMemo(() => storageKey('institutes'), []);
+
+  useEffect(() => {
+    if (!id) return;
+    const list = loadList(institutesKey);
+    const existing = list.find((x) => x.id === id);
+    if (!existing) return;
+    setForm((prev) => ({
+      ...prev,
+      ...existing,
+    }));
+  }, [id, institutesKey]);
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const persist = ({ status } = {}) => {
+    const list = loadList(institutesKey);
+    const existing = effectiveId ? list.find((x) => x.id === effectiveId) : undefined;
+    const isNew = !existing;
+    const nextId = existing?.id || effectiveId || makeId('inst');
+
+    const record = withTimestamps(
+      existing,
+      {
+        ...form,
+        id: nextId,
+        status: status || form.status || 'draft',
+        createdBy: existing?.createdBy || 'ADMIN USER',
+      },
+      { isNew }
+    );
+
+    saveList(institutesKey, upsertById(list, record));
+    setForm((prev) => ({ ...prev, id: nextId, status: record.status }));
+
+    return record;
+  };
+
+  const validateStep = (s) => {
+    const stepErrors = validateInstitute(form, s);
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  if (shouldRedirect) return <Navigate to={redirectTo} replace />;
 
   return (
     <div>
-      <div className="pageTitle">Create Institute</div>
+      <div className="pageTitle">{id ? 'Edit Institute' : 'Create Institute'}</div>
 
       <Stepper steps={steps} activeIndex={activeIndex} />
 
@@ -55,11 +112,20 @@ export default function CreateInstitute() {
             <div className="formGrid2" style={{ marginTop: 12 }}>
               <div className="field">
                 <div className="label">Name of Institute*</div>
-                <input className="input" defaultValue={form.name} />
+                <input
+                  className={errors.name ? 'input inputError' : 'input'}
+                  value={form.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                />
+                {errors.name ? <div className="errorText">{errors.name}</div> : null}
               </div>
               <div className="field">
                 <div className="label">Institute Type</div>
-                <select className="select" defaultValue={form.type}>
+                <select
+                  className="select"
+                  value={form.type}
+                  onChange={(e) => updateField('type', e.target.value)}
+                >
                   <option value=""> </option>
                   <option value="private">Private</option>
                   <option value="public">Public</option>
@@ -67,19 +133,44 @@ export default function CreateInstitute() {
               </div>
               <div className="field">
                 <div className="label">Trademark*</div>
-                <input className="input" defaultValue={form.trademark} />
+                <input
+                  className={errors.trademark ? 'input inputError' : 'input'}
+                  value={form.trademark}
+                  onChange={(e) => updateField('trademark', e.target.value)}
+                />
+                {errors.trademark ? <div className="errorText">{errors.trademark}</div> : null}
               </div>
               <div className="field">
                 <div className="label">GST*</div>
-                <input className="input" defaultValue={form.gst} />
+                <input
+                  className={errors.gst ? 'input inputError' : 'input'}
+                  value={form.gst}
+                  onChange={(e) => updateField('gst', e.target.value.toUpperCase())}
+                  placeholder="15 character GSTIN"
+                />
+                {errors.gst ? <div className="errorText">{errors.gst}</div> : null}
               </div>
               <div className="field">
                 <div className="label">Contact Number*</div>
-                <input className="input" defaultValue={form.contact} />
+                <input
+                  className={errors.contact ? 'input inputError' : 'input'}
+                  value={form.contact}
+                  onChange={(e) => updateField('contact', e.target.value)}
+                  inputMode="tel"
+                  placeholder="Phone number"
+                />
+                {errors.contact ? <div className="errorText">{errors.contact}</div> : null}
               </div>
               <div className="field">
                 <div className="label">Email</div>
-                <input className="input" defaultValue={form.email} />
+                <input
+                  className={errors.email ? 'input inputError' : 'input'}
+                  value={form.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  type="email"
+                  placeholder="name@company.com"
+                />
+                {errors.email ? <div className="errorText">{errors.email}</div> : null}
               </div>
               <div className="field" style={{ gridColumn: '1 / -1' }}>
                 <div className="label">Company logo*</div>
@@ -93,10 +184,25 @@ export default function CreateInstitute() {
             </div>
 
             <div className="footerActions">
-              <button className="btn" type="button">
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  persist({ status: 'draft' });
+                  navigate('/institutes');
+                }}
+              >
                 Save as draft
               </button>
-              <button className="btn btnAccent" type="button" onClick={goNext}>
+              <button
+                className="btn btnAccent"
+                type="button"
+                onClick={() => {
+                  if (!validateStep(1)) return;
+                  const saved = persist({ status: 'draft' });
+                  navigate(`/institutes/${saved.id}/edit/${Math.min(4, current + 1)}`, { replace: true });
+                }}
+              >
                 Save and Proceed
               </button>
             </div>
@@ -109,24 +215,56 @@ export default function CreateInstitute() {
             <div className="formGrid2" style={{ marginTop: 12 }}>
               <div className="field">
                 <div className="label">Name</div>
-                <input className="input" defaultValue={form.adminName} />
+                <input
+                  className={errors.adminName ? 'input inputError' : 'input'}
+                  value={form.adminName}
+                  onChange={(e) => updateField('adminName', e.target.value)}
+                />
+                {errors.adminName ? <div className="errorText">{errors.adminName}</div> : null}
               </div>
               <div className="field">
                 <div className="label">Contact No.</div>
-                <input className="input" defaultValue={form.adminContact} />
+                <input
+                  className={errors.adminContact ? 'input inputError' : 'input'}
+                  value={form.adminContact}
+                  onChange={(e) => updateField('adminContact', e.target.value)}
+                  inputMode="tel"
+                />
+                {errors.adminContact ? <div className="errorText">{errors.adminContact}</div> : null}
               </div>
               <div className="field">
                 <div className="label">Email ID</div>
-                <input className="input" defaultValue={form.adminEmail} />
+                <input
+                  className={errors.adminEmail ? 'input inputError' : 'input'}
+                  value={form.adminEmail}
+                  onChange={(e) => updateField('adminEmail', e.target.value)}
+                  type="email"
+                />
+                {errors.adminEmail ? <div className="errorText">{errors.adminEmail}</div> : null}
               </div>
               <div />
             </div>
 
             <div className="footerActions">
-              <button className="btn" type="button" onClick={goPrev}>
-                Save as draft
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  const saved = persist({ status: 'draft' });
+                  navigate(`/institutes/${saved.id}/edit/${Math.max(1, current - 1)}`);
+                }}
+              >
+                Back
               </button>
-              <button className="btn btnAccent" type="button" onClick={goNext}>
+              <button
+                className="btn btnAccent"
+                type="button"
+                onClick={() => {
+                  if (!validateStep(2)) return;
+                  const saved = persist({ status: 'draft' });
+                  navigate(`/institutes/${saved.id}/edit/${Math.min(4, current + 1)}`);
+                }}
+              >
                 Save and Proceed
               </button>
             </div>
@@ -140,10 +278,24 @@ export default function CreateInstitute() {
             <div style={{ height: 220 }} />
 
             <div className="footerActions">
-              <button className="btn" type="button" onClick={goPrev}>
-                Save as draft
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  const saved = persist({ status: 'draft' });
+                  navigate(`/institutes/${saved.id}/edit/${Math.max(1, current - 1)}`);
+                }}
+              >
+                Back
               </button>
-              <button className="btn btnAccent" type="button" onClick={goNext}>
+              <button
+                className="btn btnAccent"
+                type="button"
+                onClick={() => {
+                  const saved = persist({ status: 'draft' });
+                  navigate(`/institutes/${saved.id}/edit/${Math.min(4, current + 1)}`);
+                }}
+              >
                 Save and Proceed
               </button>
             </div>
@@ -156,11 +308,11 @@ export default function CreateInstitute() {
             <div className="formGrid2" style={{ marginTop: 12 }}>
               <div className="field">
                 <div className="label">Name of Institute*</div>
-                <input className="input" defaultValue={form.name} />
+                <input className="input" value={form.name} readOnly />
               </div>
               <div className="field">
                 <div className="label">Institute Type</div>
-                <select className="select" defaultValue={form.type}>
+                <select className="select" value={form.type} disabled>
                   <option value=""> </option>
                   <option value="private">Private</option>
                   <option value="public">Public</option>
@@ -168,19 +320,19 @@ export default function CreateInstitute() {
               </div>
               <div className="field">
                 <div className="label">Trademark*</div>
-                <input className="input" defaultValue={form.trademark} />
+                <input className="input" value={form.trademark} readOnly />
               </div>
               <div className="field">
                 <div className="label">GST*</div>
-                <input className="input" defaultValue={form.gst} />
+                <input className="input" value={form.gst} readOnly />
               </div>
               <div className="field">
                 <div className="label">Contact Number*</div>
-                <input className="input" defaultValue={form.contact} />
+                <input className="input" value={form.contact} readOnly />
               </div>
               <div className="field">
                 <div className="label">Email</div>
-                <input className="input" defaultValue={form.email} />
+                <input className="input" value={form.email} readOnly />
               </div>
               <div className="field" style={{ gridColumn: '1 / -1' }}>
                 <div className="label">Company logo*</div>
@@ -199,15 +351,15 @@ export default function CreateInstitute() {
             <div className="formGrid2" style={{ marginTop: 12 }}>
               <div className="field">
                 <div className="label">Name</div>
-                <input className="input" defaultValue={form.adminName} />
+                <input className="input" value={form.adminName} readOnly />
               </div>
               <div className="field">
                 <div className="label">Contact No.</div>
-                <input className="input" defaultValue={form.adminContact} />
+                <input className="input" value={form.adminContact} readOnly />
               </div>
               <div className="field">
                 <div className="label">Email ID</div>
-                <input className="input" defaultValue={form.adminEmail} />
+                <input className="input" value={form.adminEmail} readOnly />
               </div>
               <div />
             </div>
@@ -218,10 +370,27 @@ export default function CreateInstitute() {
             <div style={{ height: 140 }} />
 
             <div className="footerActions">
-              <button className="btn" type="button" onClick={() => navigate('/institutes')}>
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  persist({ status: 'draft' });
+                  navigate('/institutes');
+                }}
+              >
                 Save as draft
               </button>
-              <button className="btn btnAccent" type="button" onClick={() => navigate('/institutes')}>
+              <button
+                className="btn btnAccent"
+                type="button"
+                onClick={() => {
+                  const allErrors = validateInstitute(form, null);
+                  setErrors(allErrors);
+                  if (Object.keys(allErrors).length > 0) return;
+                  persist({ status: 'active' });
+                  navigate('/institutes');
+                }}
+              >
                 Save and Proceed
               </button>
             </div>

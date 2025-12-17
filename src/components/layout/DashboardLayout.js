@@ -1,14 +1,30 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 export default function DashboardLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    // Close mobile sidebar on navigation
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
   return (
-    <div className="dashboardShell">
-      <Sidebar />
+    <div className={sidebarOpen ? 'dashboardShell hasSidebarOpen' : 'dashboardShell'}>
+      {sidebarOpen ? (
+        <button
+          className="sidebarBackdrop"
+          type="button"
+          aria-label="Close menu"
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
+      <Sidebar onNavigate={() => setSidebarOpen(false)} />
       <div className="main">
-        <Topbar />
+        <Topbar onMenuClick={() => setSidebarOpen((v) => !v)} />
         <main className="content">
           <Outlet />
         </main>
