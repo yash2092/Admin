@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import Stepper from '../components/ui/Stepper';
+import Stepper from '../ui/Stepper';
 import {
   IconChevronDown,
   IconChevronRight,
   IconPlus,
   IconTrash,
   IconUpload,
-} from '../components/ui/Icons';
+} from '../ui/Icons';
 import { loadList, makeId, saveList, storageKey, upsertById, withTimestamps } from '../utils/storage';
 import { validateCourse, wordCount } from '../utils/validators';
 import '../styles/admin/ui/Cards.css';

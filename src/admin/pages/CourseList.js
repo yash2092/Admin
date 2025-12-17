@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconPencil, IconPlus, IconSearch, IconTrash } from '../components/ui/Icons';
+import { IconPencil, IconPlus, IconSearch, IconTrash } from '../ui/Icons';
 import { loadList, removeById, saveList, storageKey } from '../utils/storage';
 import '../styles/admin/ui/Cards.css';
 import '../styles/admin/ui/Controls.css';

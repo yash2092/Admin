@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { isAdminAuthenticated } from '../../utils/adminAuth';
+import { isAdminAuthenticated } from '../utils/adminAuth';
 
 export default function RequireAdminAuth({ children }) {
   const location = useLocation();

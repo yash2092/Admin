@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
-import { isAdminAuthenticated, setAdminSession } from './utils/adminAuth';
+import { isAdminAuthenticated, setAdminSession } from './admin/utils/adminAuth';
 
 beforeEach(() => {
   window.localStorage.clear();

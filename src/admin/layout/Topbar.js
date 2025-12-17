@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../styles/admin/layout/Topbar.css';
+import '../styles/admin/layout/Topbar.css';
 
 export default function Topbar({ onMenuClick }) {
   return (

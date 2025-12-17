@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { IconBook, IconBuilding, IconList, IconPlus } from '../ui/Icons';
-import '../../styles/admin/layout/Sidebar.css';
+import '../styles/admin/layout/Sidebar.css';
 
 function SideLink({ to, icon, children, onNavigate }) {
   return (
