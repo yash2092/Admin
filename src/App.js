@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import './styles/dashboard.css';
+import './styles/admin/dashboard.css';
 
 import DashboardLayout from './components/layout/DashboardLayout';
+import RequireAdminAuth from './components/auth/RequireAdminAuth';
+import AdminLogin from './pages/AdminLogin';
 import CourseList from './pages/CourseList';
 import CreateCourse from './pages/CreateCourse';
 import CreateInstitute from './pages/CreateInstitute';
@@ -12,7 +14,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<DashboardLayout />}>
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route
+          element={
+            <RequireAdminAuth>
+              <DashboardLayout />
+            </RequireAdminAuth>
+          }
+        >
           <Route index element={<Navigate to="/institutes" replace />} />
           <Route path="/institutes" element={<InstituteList />} />
           <Route path="/institutes/create" element={<CreateInstitute />} />
