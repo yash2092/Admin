@@ -2,11 +2,12 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { IconBook, IconBuilding, IconList, IconPlus } from '../ui/Icons';
 
-function SideLink({ to, icon, children }) {
+function SideLink({ to, icon, children, onNavigate }) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) => (isActive ? 'sideItem sideItemActive' : 'sideItem')}
+      onClick={onNavigate}
     >
       <span className="sideIcon">{icon}</span>
       <span>{children}</span>
@@ -14,7 +15,7 @@ function SideLink({ to, icon, children }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -29,10 +30,10 @@ export default function Sidebar() {
 
       <div className="sideSectionTitle">Institute Portfolio</div>
       <nav className="sideNav">
-        <SideLink to="/institutes" icon={<IconBuilding size={18} />}>
+        <SideLink to="/institutes" icon={<IconBuilding size={18} />} onNavigate={onNavigate}>
           Institute List
         </SideLink>
-        <SideLink to="/institutes/create" icon={<IconPlus size={18} />}>
+        <SideLink to="/institutes/create/1" icon={<IconPlus size={18} />} onNavigate={onNavigate}>
           Create Institute
         </SideLink>
       </nav>
@@ -41,10 +42,10 @@ export default function Sidebar() {
 
       <div className="sideSectionTitle">Courses</div>
       <nav className="sideNav">
-        <SideLink to="/courses" icon={<IconList size={18} />}>
+        <SideLink to="/courses" icon={<IconList size={18} />} onNavigate={onNavigate}>
           Course List
         </SideLink>
-        <SideLink to="/courses/create" icon={<IconBook size={18} />}>
+        <SideLink to="/courses/create/1" icon={<IconBook size={18} />} onNavigate={onNavigate}>
           Create Course
         </SideLink>
       </nav>

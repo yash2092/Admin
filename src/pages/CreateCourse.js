@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import Stepper from '../components/ui/Stepper';
 import {
@@ -8,6 +8,8 @@ import {
   IconTrash,
   IconUpload,
 } from '../components/ui/Icons';
+import { loadList, makeId, saveList, storageKey, upsertById, withTimestamps } from '../utils/storage';
+import { validateCourse, wordCount } from '../utils/validators';
 
 const steps = [
   { key: '1', label: 'Course Details' },
@@ -21,33 +23,115 @@ function clampStep(s) {
   return n;
 }
 
-function wordCount(str) {
-  if (!str) return 0;
-  return str.trim().split(/\s+/).filter(Boolean).length;
-}
-
 export default function CreateCourse() {
   const navigate = useNavigate();
-  const { step } = useParams();
+  const { step, id } = useParams();
   const current = useMemo(() => clampStep(step ?? '1'), [step]);
-  if (!step) return <Navigate to="/courses/create/1" replace />;
+  const shouldRedirect = !step;
+  const redirectTo = id ? `/courses/${id}/edit/1` : '/courses/create/1';
 
-  const [desc, setDesc] = useState('');
-  const [modules, setModules] = useState(() => [
-    {
-      title: 'Module 1 : Introduction to Finance',
-      videoTitle: 'Budgeting and Financial Planning',
-      studyTitle: '',
-      expanded: true,
-    },
-  ]);
+  const coursesKey = useMemo(() => storageKey('courses'), []);
+  const [errors, setErrors] = useState({});
 
-  const goNext = () => navigate(`/courses/create/${Math.min(2, current + 1)}`);
-  const goPrev = () => navigate(`/courses/create/${Math.max(1, current - 1)}`);
+  const [form, setForm] = useState(() => ({
+    id: '',
+    name: '',
+    category: '',
+    teacher: '',
+    description: '',
+    demoVideoName: '',
+    modules: [
+      {
+        title: '',
+        videoTitle: '',
+        videoFileName: '',
+        studyTitle: '',
+        studyFileName: '',
+        expanded: true,
+      },
+    ],
+    status: 'draft',
+  }));
+
+  const effectiveId = id || form.id;
+
+  useEffect(() => {
+    if (!id) return;
+    const list = loadList(coursesKey);
+    const existing = list.find((x) => x.id === id);
+    if (!existing) return;
+    setForm((prev) => ({ ...prev, ...existing }));
+  }, [id, coursesKey]);
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const updateModule = (idx, patch) => {
+    setForm((prev) => ({
+      ...prev,
+      modules: prev.modules.map((m, i) => (i === idx ? { ...m, ...patch } : m)),
+    }));
+  };
+
+  const addModule = () => {
+    setForm((prev) => ({
+      ...prev,
+      modules: [
+        ...prev.modules,
+        {
+          title: '',
+          videoTitle: '',
+          videoFileName: '',
+          studyTitle: '',
+          studyFileName: '',
+          expanded: true,
+        },
+      ],
+    }));
+  };
+
+  const deleteModule = (idx) => {
+    setForm((prev) => ({ ...prev, modules: prev.modules.filter((_, i) => i !== idx) }));
+  };
+
+  const persist = ({ status } = {}) => {
+    const list = loadList(coursesKey);
+    const existing = effectiveId ? list.find((x) => x.id === effectiveId) : undefined;
+    const isNew = !existing;
+    const nextId = existing?.id || effectiveId || makeId('course');
+    const record = withTimestamps(
+      existing,
+      {
+        ...form,
+        id: nextId,
+        status: status || form.status || 'draft',
+        createdBy: existing?.createdBy || 'ADMIN USER',
+      },
+      { isNew }
+    );
+    saveList(coursesKey, upsertById(list, record));
+    setForm((prev) => ({ ...prev, id: nextId, status: record.status }));
+    return record;
+  };
+
+  const validateStep = (s) => {
+    const stepErrors = validateCourse(form, s);
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  if (shouldRedirect) return <Navigate to={redirectTo} replace />;
 
   return (
     <div>
-      <div className="pageTitle">Create Course</div>
+      <div className="pageTitle">{id ? 'Edit Course' : 'Create Course'}</div>
 
       <Stepper steps={steps} activeIndex={current - 1} />
 
@@ -56,52 +140,94 @@ export default function CreateCourse() {
           <div className="formGrid2" style={{ marginTop: 2 }}>
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <div className="label">Name of the Course</div>
-              <input className="input" />
+              <input
+                className={errors.name ? 'input inputError' : 'input'}
+                value={form.name}
+                onChange={(e) => updateField('name', e.target.value)}
+              />
+              {errors.name ? <div className="errorText">{errors.name}</div> : null}
             </div>
 
             <div className="field">
               <div className="label">Demo Video</div>
               <div className="fileRow">
-                <div className="fileMeta">No file uploaded</div>
-                <button className="btn btnSmall btnIcon" type="button">
+                <div className="fileMeta">{form.demoVideoName ? form.demoVideoName : 'No file uploaded'}</div>
+                <button
+                  className="btn btnSmall btnIcon"
+                  type="button"
+                  onClick={() => document.getElementById('demoVideoInput')?.click()}
+                >
                   Upload file <IconUpload size={16} />
                 </button>
+                <input
+                  id="demoVideoInput"
+                  type="file"
+                  accept="video/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => updateField('demoVideoName', e.target.files?.[0]?.name || '')}
+                />
               </div>
               <div className="helper">Allowed Formats: .mp4, .mov, .avi, .mkv</div>
             </div>
 
             <div className="field">
               <div className="label">Course category</div>
-              <select className="select" defaultValue="">
+              <select
+                className={errors.category ? 'select inputError' : 'select'}
+                value={form.category}
+                onChange={(e) => updateField('category', e.target.value)}
+              >
                 <option value=""> </option>
                 <option value="finance">Finance</option>
                 <option value="business">Business</option>
               </select>
+              {errors.category ? <div className="errorText">{errors.category}</div> : null}
             </div>
 
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <div className="label">Teacher name</div>
-              <input className="input" />
+              <input
+                className={errors.teacher ? 'input inputError' : 'input'}
+                value={form.teacher}
+                onChange={(e) => updateField('teacher', e.target.value)}
+              />
+              {errors.teacher ? <div className="errorText">{errors.teacher}</div> : null}
             </div>
 
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <div className="label">Subject description</div>
               <textarea
-                className="textarea"
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
+                className={errors.description ? 'textarea inputError' : 'textarea'}
+                value={form.description}
+                onChange={(e) => updateField('description', e.target.value)}
               />
+              {errors.description ? <div className="errorText">{errors.description}</div> : null}
               <div style={{ display: 'flex', justifyContent: 'flex-end', color: 'var(--muted)', fontSize: 11 }}>
-                Word limit {wordCount(desc)} / 500
+                Word limit {wordCount(form.description)} / 500
               </div>
             </div>
           </div>
 
           <div className="footerActions">
-            <button className="btn" type="button">
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                persist({ status: 'draft' });
+                navigate('/courses');
+              }}
+            >
               Save as draft
             </button>
-            <button className="btn btnAccent" type="button" onClick={goNext}>
+            <button
+              className="btn btnAccent"
+              type="button"
+              onClick={() => {
+                if (!validateStep(1)) return;
+                const saved = persist({ status: 'draft' });
+                navigate(`/courses/${saved.id}/edit/${Math.min(2, current + 1)}`, { replace: true });
+              }}
+            >
               Save and Proceed
             </button>
           </div>
@@ -110,17 +236,17 @@ export default function CreateCourse() {
 
       {current === 2 ? (
         <div className="card cardPad">
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>
-            Understanding Basic Finance
-          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{form.name || 'Course'}</div>
 
-          {modules.map((m, idx) => (
-            <div className="card" style={{ marginBottom: 14 }} key={`${idx}-${m.title}`}>
+          {errors.modules ? <div className="errorText" style={{ marginBottom: 10 }}>{errors.modules}</div> : null}
+
+          {form.modules.map((m, idx) => (
+            <div className="card" style={{ marginBottom: 14 }} key={`module-${idx}`}>
               <div className="moduleCard">
                 <div className="moduleHeader">
                   <div className="moduleHeaderLeft">
                     <span className="moduleBadge">{idx + 1}</span>
-                    <div className="moduleTitle">{m.title}</div>
+                    <div className="moduleTitle">{m.title || `Module ${idx + 1}`}</div>
                   </div>
 
                   <div className="actions" style={{ gap: 8 }}>
@@ -128,15 +254,20 @@ export default function CreateCourse() {
                       className="iconBtn"
                       aria-label={m.expanded ? 'Collapse' : 'Expand'}
                       onClick={() => {
-                        setModules((prev) =>
-                          prev.map((x, i) => (i === idx ? { ...x, expanded: !x.expanded } : x))
-                        );
+                        updateModule(idx, { expanded: !m.expanded });
                       }}
                       type="button"
                     >
                       {m.expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                     </button>
-                    <button className="iconBtn" aria-label="Delete module" type="button">
+                    <button
+                      className="iconBtn"
+                      aria-label="Delete module"
+                      type="button"
+                      onClick={() => deleteModule(idx)}
+                      disabled={form.modules.length === 1}
+                      title={form.modules.length === 1 ? 'At least one module is required' : 'Delete module'}
+                    >
                       <IconTrash size={16} />
                     </button>
                   </div>
@@ -146,27 +277,67 @@ export default function CreateCourse() {
                   <div>
                     <div className="formGrid2" style={{ gap: 10 }}>
                       <div className="field" style={{ gridColumn: '1 / -1' }}>
+                        <div className="label">Module Title</div>
+                        <input
+                          className={errors[`modules.${idx}.title`] ? 'input inputError' : 'input'}
+                          value={m.title}
+                          onChange={(e) => updateModule(idx, { title: e.target.value })}
+                        />
+                        {errors[`modules.${idx}.title`] ? (
+                          <div className="errorText">{errors[`modules.${idx}.title`]}</div>
+                        ) : null}
+                      </div>
+                      <div className="field" style={{ gridColumn: '1 / -1' }}>
                         <div className="label">Video Title</div>
                         <div className="fileRow">
                           <input
                             className="input"
-                            defaultValue={m.videoTitle}
+                            value={m.videoTitle}
+                            onChange={(e) => updateModule(idx, { videoTitle: e.target.value })}
                             style={{ border: 'none', background: 'transparent', padding: 0 }}
                           />
-                          <button className="btn btnSmall" type="button">
+                          <button
+                            className="btn btnSmall"
+                            type="button"
+                            onClick={() => document.getElementById(`moduleVideo-${idx}`)?.click()}
+                          >
                             Upload file
                           </button>
+                          <input
+                            id={`moduleVideo-${idx}`}
+                            type="file"
+                            accept="video/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => updateModule(idx, { videoFileName: e.target.files?.[0]?.name || '' })}
+                          />
                         </div>
+                        {m.videoFileName ? <div className="helper" style={{ color: 'var(--muted)' }}>{m.videoFileName}</div> : null}
                       </div>
 
                       <div className="field" style={{ gridColumn: '1 / -1' }}>
                         <div className="label">Study Material Title</div>
                         <div className="fileRow">
-                          <input className="input" style={{ border: 'none', background: 'transparent', padding: 0 }} />
-                          <button className="btn btnSmall" type="button">
+                          <input
+                            className="input"
+                            value={m.studyTitle}
+                            onChange={(e) => updateModule(idx, { studyTitle: e.target.value })}
+                            style={{ border: 'none', background: 'transparent', padding: 0 }}
+                          />
+                          <button
+                            className="btn btnSmall"
+                            type="button"
+                            onClick={() => document.getElementById(`moduleStudy-${idx}`)?.click()}
+                          >
                             Upload file
                           </button>
+                          <input
+                            id={`moduleStudy-${idx}`}
+                            type="file"
+                            style={{ display: 'none' }}
+                            onChange={(e) => updateModule(idx, { studyFileName: e.target.files?.[0]?.name || '' })}
+                          />
                         </div>
+                        {m.studyFileName ? <div className="helper" style={{ color: 'var(--muted)' }}>{m.studyFileName}</div> : null}
                       </div>
                     </div>
 
@@ -193,27 +364,32 @@ export default function CreateCourse() {
           <button
             className="btn btnDark btnIcon"
             type="button"
-            onClick={() =>
-              setModules((prev) => [
-                ...prev,
-                {
-                  title: `Module ${prev.length + 1} : New Module`,
-                  videoTitle: '',
-                  studyTitle: '',
-                  expanded: true,
-                },
-              ])
-            }
+            onClick={addModule}
           >
             <IconPlus size={18} />
             Add New Module
           </button>
 
           <div className="footerActions" style={{ marginTop: 16 }}>
-            <button className="btn" type="button" onClick={goPrev}>
-              Save as draft
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                const saved = persist({ status: 'draft' });
+                navigate(`/courses/${saved.id}/edit/${Math.max(1, current - 1)}`);
+              }}
+            >
+              Back
             </button>
-            <button className="btn btnAccent" type="button" onClick={() => navigate('/courses')}>
+            <button
+              className="btn btnAccent"
+              type="button"
+              onClick={() => {
+                if (!validateStep(2)) return;
+                persist({ status: 'active' });
+                navigate('/courses');
+              }}
+            >
               Save and Proceed
             </button>
           </div>

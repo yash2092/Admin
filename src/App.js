@@ -17,10 +17,14 @@ function App() {
           <Route path="/institutes" element={<InstituteList />} />
           <Route path="/institutes/create" element={<CreateInstitute />} />
           <Route path="/institutes/create/:step" element={<CreateInstitute />} />
+          <Route path="/institutes/:id/edit" element={<CreateInstitute />} />
+          <Route path="/institutes/:id/edit/:step" element={<CreateInstitute />} />
 
           <Route path="/courses" element={<CourseList />} />
           <Route path="/courses/create" element={<CreateCourse />} />
           <Route path="/courses/create/:step" element={<CreateCourse />} />
+          <Route path="/courses/:id/edit" element={<CreateCourse />} />
+          <Route path="/courses/:id/edit/:step" element={<CreateCourse />} />
 
           <Route path="*" element={<Navigate to="/institutes" replace />} />
         </Route>

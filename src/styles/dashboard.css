@@ -129,6 +129,25 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: 0.08em;
   color: #111827;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menuBtn {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.menuBtn:hover {
+  background: rgba(16, 24, 40, 0.03);
 }
 
 .topRight {
@@ -397,6 +416,17 @@ a { color: inherit; text-decoration: none; }
   background: #fbfbfc;
 }
 
+.inputError {
+  border-color: #ef4444 !important;
+  background: #fff7f7;
+}
+
+.errorText {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
 .textarea {
   min-height: 96px;
   resize: vertical;
@@ -456,11 +486,38 @@ a { color: inherit; text-decoration: none; }
   background: #fff;
   border: 1px solid var(--border);
   padding: 16px;
+  position: relative;
+}
+
+.courseCardClickable {
+  cursor: pointer;
+}
+
+.courseCardClickable:hover {
+  background: rgba(16, 24, 40, 0.02);
 }
 
 .courseTitle {
   font-weight: 700;
   line-height: 1.15;
+  white-space: pre-line;
+}
+
+.courseMeta {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.courseActions {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 8px;
 }
 
 /* Module builder */
@@ -522,14 +579,37 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 860px) {
-  .sidebar { width: 220px; }
   .formGrid2 { grid-template-columns: 1fr; }
   .table { min-width: 720px; }
+
+  .menuBtn { display: inline-flex; }
+
+  .sidebar {
+    width: 260px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+  }
+
+  .dashboardShell.hasSidebarOpen .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebarBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    border: none;
+    background: rgba(17, 24, 39, 0.35);
+  }
 }
 
 @media (max-width: 640px) {
-  .dashboardShell { flex-direction: column; }
-  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
   .topbar { padding: 0 14px; }
   .content { padding: 14px; }
   .cardGrid { grid-template-columns: 1fr; }
