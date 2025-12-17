@@ -1,18 +1,27 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import './styles/dashboard.css';
 
-import DashboardLayout from './components/layout/DashboardLayout';
-import CourseList from './pages/CourseList';
-import CreateCourse from './pages/CreateCourse';
-import CreateInstitute from './pages/CreateInstitute';
-import InstituteList from './pages/InstituteList';
+import DashboardLayout from './admin/layout/DashboardLayout';
+import RequireAdminAuth from './admin/auth/RequireAdminAuth';
+import AdminLogin from './admin/pages/AdminLogin';
+import CourseList from './admin/pages/CourseList';
+import CreateCourse from './admin/pages/CreateCourse';
+import CreateInstitute from './admin/pages/CreateInstitute';
+import InstituteList from './admin/pages/InstituteList';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<DashboardLayout />}>
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route
+          element={
+            <RequireAdminAuth>
+              <DashboardLayout />
+            </RequireAdminAuth>
+          }
+        >
           <Route index element={<Navigate to="/institutes" replace />} />
           <Route path="/institutes" element={<InstituteList />} />
           <Route path="/institutes/create" element={<CreateInstitute />} />

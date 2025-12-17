@@ -1,0 +1,70 @@
+.courseListHeaderRow {
+  margin-bottom: 10px;
+}
+
+.courseListTitle {
+  margin: 0;
+}
+
+.courseListSearchRow {
+  margin-bottom: 14px;
+}
+
+.courseListEmptyState {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.courseCard {
+  height: 110px;
+  border-radius: var(--radius);
+  background: #fff;
+  border: 1px solid var(--border);
+  padding: 16px;
+  position: relative;
+}
+
+.courseCardClickable {
+  cursor: pointer;
+}
+
+.courseCardClickable:hover {
+  background: rgba(16, 24, 40, 0.02);
+}
+
+.courseTitle {
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: pre-line;
+}
+
+.courseMeta {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.courseActions {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .cardGrid { grid-template-columns: 1fr; }
+}

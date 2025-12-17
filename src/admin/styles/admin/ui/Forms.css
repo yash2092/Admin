@@ -1,0 +1,91 @@
+.formGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.input,
+.select,
+.textarea {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  background: #fbfbfc;
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+  background: #fff7f7;
+}
+
+.errorText {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fbfbfc;
+}
+
+.fileMeta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.helper {
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 8px;
+}
+
+.footerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 0 4px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 10px 0 10px;
+}
+
+.subTitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -4px;
+}
+
+@media (max-width: 860px) {
+  .formGrid2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .footerActions { justify-content: stretch; }
+}

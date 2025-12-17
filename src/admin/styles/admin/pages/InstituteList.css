@@ -1,0 +1,16 @@
+.instituteListSearchRow {
+  margin-bottom: 14px;
+}
+
+.instituteListEmptyCell {
+  color: var(--muted);
+}
+
+.instituteListIdCol {
+  width: 90px;
+}
+
+.instituteListActionCol {
+  width: 120px;
+  text-align: right;
+}

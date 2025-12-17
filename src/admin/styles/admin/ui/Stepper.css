@@ -1,0 +1,56 @@
+.stepper {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 18px;
+}
+
+.stepTrack {
+  width: min(720px, 100%);
+  display: grid;
+  grid-template-columns: repeat(var(--steps), 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.stepDot {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfd3da;
+  background: #fff;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.stepDotActive {
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.stepLabel {
+  font-size: 11px;
+  color: #1f2937;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.stepLine {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  right: -50%;
+  height: 0;
+  border-top: 2px dotted #cfd3da;
+  z-index: -1;
+}
