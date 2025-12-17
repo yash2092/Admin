@@ -2,8 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconPencil, IconPlus, IconSearch, IconTrash } from '../components/ui/Icons';
 
-const DRAFT_KEY = 'draft:createInstitute:v1';
-
 const rows = Array.from({ length: 10 }).map((_, i) => ({
   id: '0001',
   name: 'Example',
@@ -15,14 +13,6 @@ const rows = Array.from({ length: 10 }).map((_, i) => ({
 
 export default function InstituteList() {
   const navigate = useNavigate();
-
-  const clearSavedDraft = () => {
-    try {
-      window.localStorage.removeItem(DRAFT_KEY);
-    } catch {
-      // ignore
-    }
-  };
 
   return (
     <div>
@@ -36,15 +26,10 @@ export default function InstituteList() {
           </span>
         </div>
 
-        <div className="row" style={{ gap: 10 }}>
-          <button className="btn" type="button" onClick={clearSavedDraft}>
-            Clear saved draft
-          </button>
-          <button className="btn btnDark btnIcon" onClick={() => navigate('/institutes/create')}>
-            <IconPlus size={18} />
-            Create Institute
-          </button>
-        </div>
+        <button className="btn btnDark btnIcon" onClick={() => navigate('/institutes/create')}>
+          <IconPlus size={18} />
+          Create Institute
+        </button>
       </div>
 
       <div className="card">
