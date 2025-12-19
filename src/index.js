@@ -5,9 +5,21 @@ import './admin/styles/admin/ui/base.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
+/**
+ * Application entry point.
+ *
+ * WHY this file is intentionally small:
+ * - It should only bootstrap React and global styles.
+ * - App-level routing and UI logic belongs inside `App`.
+ */
+
+const rootElement = document.getElementById('root');
+const reactRoot = ReactDOM.createRoot(rootElement);
+
+reactRoot.render(
   <React.StrictMode>
+    {/* WHY StrictMode:
+        Helps catch common React pitfalls during development (double-invokes some lifecycles). */}
     <App />
   </React.StrictMode>
 );

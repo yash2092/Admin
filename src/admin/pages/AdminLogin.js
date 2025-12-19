@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { setAdminSession } from '../utils/adminAuth';
 import '../styles/admin/login.css';
@@ -56,18 +56,60 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
-  const redirectTo = useMemo(() => {
-    const from = location.state && location.state.from;
-    return (from && from.pathname) || '/institutes';
-  }, [location.state]);
+  // WHY:
+  // - When a user tries to open a protected route, we redirect them to login.
+  // - We store their original location in router state (`state.from`) so after
+  //   logging in we can take them back to where they were going.
+  //
+  // We compute this directly (no memo) to keep the logic simple and avoid hook
+  // dependency edge-cases.
+  let redirectTo = '/institutes';
+  if (location && location.state && location.state.from && location.state.from.pathname) {
+    redirectTo = location.state.from.pathname;
+  }
 
-  const canSubmit = agreed && email.trim() && password;
+  // Keep these checks explicit. It reads longer, but it's easier to reason about.
+  const trimmedEmail = email.trim();
+  const hasAgreedToTerms = agreed === true;
+  const hasEmail = trimmedEmail !== '';
+  const hasPassword = password !== '';
+  const canSubmit = hasAgreedToTerms && hasEmail && hasPassword;
 
-  function onSubmit(e) {
-    e.preventDefault();
-    if (!canSubmit) return;
+  function handleEmailChange(event) {
+    const nextEmail = event.target.value;
+    setEmail(nextEmail);
+  }
 
-    setAdminSession({ email: email.trim() });
+  function handlePasswordChange(event) {
+    const nextPassword = event.target.value;
+    setPassword(nextPassword);
+  }
+
+  function handleTogglePasswordVisibility() {
+    setShowPassword((previousValue) => !previousValue);
+  }
+
+  function handleAgreedChange(event) {
+    const nextValue = event.target.checked;
+    setAgreed(nextValue);
+  }
+
+  function handleGoogleLoginClick() {
+    // WHY:
+    // - The button is in the design, but the integration is not implemented yet.
+    // - Keeping the button visible communicates planned functionality.
+    window.alert('Google login is not wired yet.');
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    // This is defensive: the submit button is disabled, but users can still submit via Enter.
+    if (!canSubmit) {
+      return;
+    }
+
+    setAdminSession({ email: trimmedEmail });
     navigate(redirectTo, { replace: true });
   }
 
@@ -79,7 +121,7 @@ export default function AdminLogin() {
             <span className="adminLoginTitleStrong">Login</span> to your account
           </h1>
 
-          <form className="adminLoginForm" onSubmit={onSubmit}>
+          <form className="adminLoginForm" onSubmit={handleSubmit}>
             <div className="adminLoginField">
               <label className="adminLoginLabel" htmlFor="adminEmail">
                 Email ID
@@ -90,7 +132,7 @@ export default function AdminLogin() {
                 type="email"
                 placeholder="Example@gmail.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 autoComplete="username"
                 required
               />
@@ -107,7 +149,7 @@ export default function AdminLogin() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   autoComplete="current-password"
                   required
                 />
@@ -115,14 +157,14 @@ export default function AdminLogin() {
                   className="adminLoginPasswordToggle"
                   type="button"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword((v) => !v)}
+                  onClick={handleTogglePasswordVisibility}
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
               <div className="adminLoginMetaRow">
                 <label className="adminLoginCheck">
-                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+                  <input type="checkbox" checked={agreed} onChange={handleAgreedChange} />
                   <span>
                     I agree with <a className="adminLoginLink" href="#terms">Terms and Condition</a>
                   </span>
@@ -145,7 +187,7 @@ export default function AdminLogin() {
               <button
                 className="adminLoginGoogle"
                 type="button"
-                onClick={() => window.alert('Google login is not wired yet.')}
+                onClick={handleGoogleLoginClick}
               >
                 <span>Google</span>
                 <GoogleG />

@@ -9,6 +9,7 @@ import '../styles/admin/ui/Tables.css';
 import '../styles/admin/pages/InstituteList.css';
 
 const EMPTY_CELL = '—';
+const INSTITUTES_STORAGE_KEY = storageKey('institutes');
 
 // Use one shared formatter so we don't recreate it on every render.
 // WHY: keeps formatting stable across devices and avoids small performance churn.
@@ -41,7 +42,7 @@ function formatInstituteId(id) {
 export default function InstituteList() {
   const navigate = useNavigate();
   // Memoize the storage key so effects below don't re-run unnecessarily.
-  const institutesStorageKey = useMemo(() => storageKey('institutes'), []);
+  const institutesStorageKey = useMemo(() => INSTITUTES_STORAGE_KEY, []);
 
   const [query, setQuery] = useState('');
   const [allInstitutes, setAllInstitutes] = useState(() => loadList(institutesStorageKey));
@@ -84,6 +85,11 @@ export default function InstituteList() {
     });
   }, [allInstitutes, query]);
 
+  function handleQueryChange(event) {
+    const nextQuery = event.target.value;
+    setQuery(nextQuery);
+  }
+
   const goToCreateInstitute = () => {
     // The Create page redirects to step 1, so we can navigate directly there.
     navigate('/institutes/create/1');
@@ -112,10 +118,7 @@ export default function InstituteList() {
             className="search"
             placeholder="Search"
             value={query}
-            onChange={(e) => {
-              const nextQuery = e.target.value;
-              setQuery(nextQuery);
-            }}
+            onChange={handleQueryChange}
           />
           <span className="searchIcon" aria-hidden="true">
             <IconSearch size={18} />
