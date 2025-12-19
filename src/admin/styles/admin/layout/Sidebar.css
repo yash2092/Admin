@@ -57,6 +57,14 @@
   background: rgba(215, 242, 90, 0.55);
 }
 
+/* Make hover vs active visually distinct:
+   - hover (inactive): subtle grey
+   - active: green highlight
+   - active + hover: slightly stronger green, not grey */
+.sideItemActive:hover {
+  background: rgba(215, 242, 90, 0.75);
+}
+
 .sideIcon {
   width: 18px;
   height: 18px;

@@ -3,10 +3,11 @@ import { NavLink } from 'react-router-dom';
 import { IconBook, IconBuilding, IconList, IconPlus } from '../ui/Icons';
 import '../styles/admin/layout/Sidebar.css';
 
-function SideLink({ to, icon, children, onNavigate }) {
+function SideLink({ to, icon, children, onNavigate, end = false }) {
   return (
     <NavLink
       to={to}
+      end={end}
       className={({ isActive }) => (isActive ? 'sideItem sideItemActive' : 'sideItem')}
       onClick={onNavigate}
     >
@@ -31,10 +32,12 @@ export default function Sidebar({ onNavigate }) {
 
       <div className="sideSectionTitle">Institute Portfolio</div>
       <nav className="sideNav">
-        <SideLink to="/institutes" icon={<IconBuilding size={18} />} onNavigate={onNavigate}>
+        {/* `end` ensures "/institutes" is NOT active on "/institutes/create" */}
+        <SideLink to="/institutes" end icon={<IconBuilding size={18} />} onNavigate={onNavigate}>
           Institute List
         </SideLink>
-        <SideLink to="/institutes/create/1" icon={<IconPlus size={18} />} onNavigate={onNavigate}>
+        {/* Keep the sidebar route stable; the page itself redirects to step 1. */}
+        <SideLink to="/institutes/create" icon={<IconPlus size={18} />} onNavigate={onNavigate}>
           Create Institute
         </SideLink>
       </nav>
@@ -43,10 +46,12 @@ export default function Sidebar({ onNavigate }) {
 
       <div className="sideSectionTitle">Courses</div>
       <nav className="sideNav">
-        <SideLink to="/courses" icon={<IconList size={18} />} onNavigate={onNavigate}>
+        {/* `end` ensures "/courses" is NOT active on "/courses/create" */}
+        <SideLink to="/courses" end icon={<IconList size={18} />} onNavigate={onNavigate}>
           Course List
         </SideLink>
-        <SideLink to="/courses/create/1" icon={<IconBook size={18} />} onNavigate={onNavigate}>
+        {/* Keep the sidebar route stable; the page itself redirects to step 1. */}
+        <SideLink to="/courses/create" icon={<IconBook size={18} />} onNavigate={onNavigate}>
           Create Course
         </SideLink>
       </nav>

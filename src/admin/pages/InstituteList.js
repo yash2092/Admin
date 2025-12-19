@@ -9,12 +9,14 @@ import '../styles/admin/ui/Tables.css';
 import '../styles/admin/pages/InstituteList.css';
 
 function formatDate(iso) {
-  if (!iso) return '';
+  if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+    if (Number.isNaN(d.getTime())) return '—';
+    // Use a stable, readable format (not locale-dependent) so the table doesn't look different per device.
+    return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
   } catch {
-    return '';
+    return '—';
   }
 }
 
@@ -63,14 +65,24 @@ export default function InstituteList() {
 
       <div className="card">
         <div className="tableWrap">
-          <table className="table">
+          <table className="table instituteListTable">
+            {/* `colgroup` + `table-layout: fixed` keeps header/row columns perfectly aligned,
+               even when users enter long text or when data updates live. */}
+            <colgroup>
+              <col className="instituteListColId" />
+              <col className="instituteListColName" />
+              <col className="instituteListColTrademark" />
+              <col className="instituteListColCreatedBy" />
+              <col className="instituteListColCreatedOn" />
+              <col className="instituteListColAction" />
+            </colgroup>
             <thead>
               <tr>
                 <th className="instituteListIdCol">ID No.</th>
-                <th>Institute Name</th>
-                <th>Trademark</th>
-                <th>Created By</th>
-                <th>Created on</th>
+                <th className="instituteListNameCol">Institute Name</th>
+                <th className="instituteListTrademarkCol">Trademark</th>
+                <th className="instituteListCreatedByCol">Created By</th>
+                <th className="instituteListCreatedOnCol">Created On</th>
                 <th className="instituteListActionCol">Action</th>
               </tr>
             </thead>
@@ -84,12 +96,24 @@ export default function InstituteList() {
               ) : (
                 filtered.map((r) => (
                   <tr key={r.id}>
-                    <td>{String(r.id || '').slice(-6).toUpperCase()}</td>
-                    <td>{r.name}</td>
-                    <td>{r.trademark}</td>
-                    <td>{r.createdBy || 'ADMIN USER'}</td>
-                    <td>{formatDate(r.createdAt)}</td>
-                    <td>
+                    <td className="instituteListIdCol">{String(r.id || '').slice(-6).toUpperCase()}</td>
+                    <td className="instituteListNameCol">
+                      <div className="cellTruncate" title={r.name || ''}>
+                        {r.name || '—'}
+                      </div>
+                    </td>
+                    <td className="instituteListTrademarkCol">
+                      <div className="cellTruncate" title={r.trademark || ''}>
+                        {r.trademark || '—'}
+                      </div>
+                    </td>
+                    <td className="instituteListCreatedByCol">
+                      <div className="cellTruncate" title={r.createdBy || 'ADMIN USER'}>
+                        {r.createdBy || 'ADMIN USER'}
+                      </div>
+                    </td>
+                    <td className="instituteListCreatedOnCol">{formatDate(r.createdAt)}</td>
+                    <td className="instituteListActionCol">
                       <div className="actions">
                         <button
                           className="iconBtn"

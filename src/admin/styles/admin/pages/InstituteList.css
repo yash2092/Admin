@@ -6,11 +6,49 @@
   color: var(--muted);
 }
 
+/* Lock the Institute List table to a predictable column grid.
+   This prevents long text or live updates from shifting columns. */
+.instituteListTable {
+  table-layout: fixed;
+}
+
+/* Column widths are defined via <colgroup> so header + body always share the same grid. */
+.instituteListColId {
+  width: 90px;
+}
+.instituteListColName {
+  width: 280px;
+}
+.instituteListColTrademark {
+  width: 180px;
+}
+.instituteListColCreatedBy {
+  width: 180px;
+}
+.instituteListColCreatedOn {
+  width: 150px;
+}
+.instituteListColAction {
+  width: 120px;
+}
+
+.cellTruncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .instituteListIdCol {
   width: 90px;
 }
 
 .instituteListActionCol {
   width: 120px;
-  text-align: right;
+  text-align: center;
+}
+
+/* Center action icons in the cell (both axes) and keep spacing consistent. */
+.instituteListActionCol .actions {
+  justify-content: center;
+  align-items: center;
 }
