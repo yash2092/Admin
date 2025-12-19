@@ -17,12 +17,20 @@ function SideLink({ to, icon, children, onNavigate, end = false }) {
   // - Without `end`, a link like "/institutes" is also considered active for
   //   "/institutes/create" because the URL starts with "/institutes".
   // - Our UI requirement is: highlight ONLY the currently active menu item.
+  function handleClick() {
+    // WHY:
+    // - On mobile, navigation should close the sidebar so the user can see the page.
+    if (typeof onNavigate === 'function') {
+      onNavigate();
+    }
+  }
+
   return (
     <NavLink
       to={to}
       end={end}
       className={getSideLinkClassName}
-      onClick={onNavigate}
+      onClick={handleClick}
     >
       <span className="sideIcon">{icon}</span>
       <span>{children}</span>

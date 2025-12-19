@@ -1,6 +1,9 @@
 import React from 'react';
 
 function Svg({ children, size = 18, strokeWidth = 1.8 }) {
+  // WHY this component exists:
+  // - Ensures all icons share the same stroke/size defaults.
+  // - Keeps each icon definition focused only on its path(s).
   return (
     <svg
       width={size}

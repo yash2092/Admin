@@ -13,19 +13,38 @@ export default function DashboardLayout() {
     setSidebarOpen(false);
   }, [location.pathname]);
 
+  function getShellClassName() {
+    // WHY:
+    // - We use a class toggle instead of conditionally rendering the sidebar itself.
+    // - This keeps the DOM structure stable and makes CSS transitions easier.
+    if (sidebarOpen) {
+      return 'dashboardShell hasSidebarOpen';
+    }
+    return 'dashboardShell';
+  }
+
+  function closeSidebar() {
+    setSidebarOpen(false);
+  }
+
+  function toggleSidebar() {
+    // Use a functional update so the toggle is always based on the latest state.
+    setSidebarOpen((previousValue) => !previousValue);
+  }
+
   return (
-    <div className={sidebarOpen ? 'dashboardShell hasSidebarOpen' : 'dashboardShell'}>
+    <div className={getShellClassName()}>
       {sidebarOpen ? (
         <button
           className="sidebarBackdrop"
           type="button"
           aria-label="Close menu"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
         />
       ) : null}
-      <Sidebar onNavigate={() => setSidebarOpen(false)} />
+      <Sidebar onNavigate={closeSidebar} />
       <div className="main">
-        <Topbar onMenuClick={() => setSidebarOpen((v) => !v)} />
+        <Topbar onMenuClick={toggleSidebar} />
         <main className="content">
           <Outlet />
         </main>

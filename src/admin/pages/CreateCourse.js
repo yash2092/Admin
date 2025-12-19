@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+
 import Stepper from '../ui/Stepper';
 import {
   IconChevronDown,
@@ -8,138 +9,392 @@ import {
   IconTrash,
   IconUpload,
 } from '../ui/Icons';
-import { loadList, makeId, saveList, storageKey, upsertById, withTimestamps } from '../utils/storage';
+import {
+  loadList,
+  makeId,
+  saveList,
+  storageKey,
+  upsertById,
+  withTimestamps,
+} from '../utils/storage';
 import { validateCourse, wordCount } from '../utils/validators';
+
 import '../styles/admin/ui/Cards.css';
 import '../styles/admin/ui/Forms.css';
 import '../styles/admin/ui/Buttons.css';
 import '../styles/admin/pages/CreateCourse.css';
 
-const steps = [
+/**
+ * This page handles BOTH:
+ * - Creating a new course
+ * - Editing an existing course
+ *
+ * WHY a single page:
+ * - The user flow is a multi-step wizard.
+ * - Create/edit share the same fields and validation.
+ */
+
+const COURSES_STORAGE_KEY = storageKey('courses');
+
+const COURSE_STEPS = [
   { key: '1', label: 'Course Details' },
   { key: '2', label: 'Course Material' },
 ];
 
-function clampStep(s) {
-  const n = Number(s);
-  if (!Number.isFinite(n) || n < 1) return 1;
-  if (n > 2) return 2;
-  return n;
+const FIRST_STEP_NUMBER = 1;
+const LAST_STEP_NUMBER = 2;
+
+function getClampedCourseStepNumber(stepParam) {
+  const parsed = Number(stepParam);
+
+  if (!Number.isFinite(parsed)) {
+    return FIRST_STEP_NUMBER;
+  }
+
+  if (parsed < FIRST_STEP_NUMBER) {
+    return FIRST_STEP_NUMBER;
+  }
+
+  if (parsed > LAST_STEP_NUMBER) {
+    return LAST_STEP_NUMBER;
+  }
+
+  return parsed;
 }
 
-export default function CreateCourse() {
-  const navigate = useNavigate();
-  const { step, id } = useParams();
-  const current = useMemo(() => clampStep(step ?? '1'), [step]);
-  const shouldRedirect = !step;
-  const redirectTo = id ? `/courses/${id}/edit/1` : '/courses/create/1';
+function createEmptyModule() {
+  return {
+    title: '',
+    videoTitle: '',
+    videoFileName: '',
+    studyTitle: '',
+    studyFileName: '',
+    expanded: true,
+  };
+}
 
-  const coursesKey = useMemo(() => storageKey('courses'), []);
-  const [errors, setErrors] = useState({});
-
-  const [form, setForm] = useState(() => ({
+function createEmptyCourseForm() {
+  return {
     id: '',
     name: '',
     category: '',
     teacher: '',
     description: '',
     demoVideoName: '',
-    modules: [
-      {
-        title: '',
-        videoTitle: '',
-        videoFileName: '',
-        studyTitle: '',
-        studyFileName: '',
-        expanded: true,
-      },
-    ],
+    modules: [createEmptyModule()],
     status: 'draft',
-  }));
+  };
+}
 
-  const effectiveId = id || form.id;
+function clickElementById(elementId) {
+  const element = document.getElementById(elementId);
+
+  // If the element isn't present yet, do nothing.
+  if (!element) {
+    return;
+  }
+
+  element.click();
+}
+
+function getFirstSelectedFileName(fileInputEvent) {
+  const input = fileInputEvent.target;
+  const files = input.files;
+
+  if (!files || files.length === 0) {
+    return '';
+  }
+
+  const firstFile = files[0];
+  return firstFile ? firstFile.name : '';
+}
+
+export default function CreateCourse() {
+  const navigate = useNavigate();
+  const params = useParams();
+
+  const stepParam = params.step;
+  const routeCourseId = params.id;
+
+  const currentStepNumber = useMemo(() => {
+    const fallbackStep = String(FIRST_STEP_NUMBER);
+    const stepValue = stepParam == null ? fallbackStep : stepParam;
+    return getClampedCourseStepNumber(stepValue);
+  }, [stepParam]);
+
+  const shouldRedirectToStepOne = stepParam == null;
+  const redirectTo = routeCourseId ? `/courses/${routeCourseId}/edit/1` : '/courses/create/1';
+
+  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState(createEmptyCourseForm);
+
+  // When creating a new record, `routeCourseId` is undefined until the first save.
+  // We track the id in state so later saves update the same course.
+  const effectiveCourseId = routeCourseId || form.id;
 
   useEffect(() => {
-    if (!id) return;
-    const list = loadList(coursesKey);
-    const existing = list.find((x) => x.id === id);
-    if (!existing) return;
-    setForm((prev) => ({ ...prev, ...existing }));
-  }, [id, coursesKey]);
+    if (!routeCourseId) {
+      return;
+    }
 
-  const updateField = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => {
-      if (!prev[key]) return prev;
-      const next = { ...prev };
-      delete next[key];
-      return next;
+    const courses = loadList(COURSES_STORAGE_KEY);
+    const existingCourse = courses.find((course) => course.id === routeCourseId);
+
+    if (!existingCourse) {
+      return;
+    }
+
+    setForm((previousForm) => {
+      return {
+        ...previousForm,
+        ...existingCourse,
+      };
     });
-  };
+  }, [routeCourseId]);
 
-  const updateModule = (idx, patch) => {
-    setForm((prev) => ({
-      ...prev,
-      modules: prev.modules.map((m, i) => (i === idx ? { ...m, ...patch } : m)),
-    }));
-  };
+  function clearErrorForField(fieldName) {
+    setErrors((previousErrors) => {
+      const hasError = Boolean(previousErrors && previousErrors[fieldName]);
+      if (!hasError) {
+        return previousErrors;
+      }
 
-  const addModule = () => {
-    setForm((prev) => ({
-      ...prev,
-      modules: [
-        ...prev.modules,
-        {
-          title: '',
-          videoTitle: '',
-          videoFileName: '',
-          studyTitle: '',
-          studyFileName: '',
-          expanded: true,
-        },
-      ],
-    }));
-  };
+      const nextErrors = { ...previousErrors };
+      delete nextErrors[fieldName];
+      return nextErrors;
+    });
+  }
 
-  const deleteModule = (idx) => {
-    setForm((prev) => ({ ...prev, modules: prev.modules.filter((_, i) => i !== idx) }));
-  };
+  function setFieldValue(fieldName, nextValue) {
+    setForm((previousForm) => {
+      return {
+        ...previousForm,
+        [fieldName]: nextValue,
+      };
+    });
 
-  const persist = ({ status } = {}) => {
-    const list = loadList(coursesKey);
-    const existing = effectiveId ? list.find((x) => x.id === effectiveId) : undefined;
-    const isNew = !existing;
-    const nextId = existing?.id || effectiveId || makeId('course');
-    const record = withTimestamps(
-      existing,
+    clearErrorForField(fieldName);
+  }
+
+  function setModuleValue(moduleIndex, patch) {
+    setForm((previousForm) => {
+      const previousModules = Array.isArray(previousForm.modules) ? previousForm.modules : [];
+
+      const nextModules = previousModules.map((moduleItem, index) => {
+        if (index !== moduleIndex) {
+          return moduleItem;
+        }
+
+        return {
+          ...moduleItem,
+          ...patch,
+        };
+      });
+
+      return {
+        ...previousForm,
+        modules: nextModules,
+      };
+    });
+  }
+
+  function addModule() {
+    setForm((previousForm) => {
+      const previousModules = Array.isArray(previousForm.modules) ? previousForm.modules : [];
+      const nextModules = [...previousModules, createEmptyModule()];
+
+      return {
+        ...previousForm,
+        modules: nextModules,
+      };
+    });
+  }
+
+  function deleteModule(moduleIndex) {
+    setForm((previousForm) => {
+      const previousModules = Array.isArray(previousForm.modules) ? previousForm.modules : [];
+      const nextModules = previousModules.filter((_, index) => index !== moduleIndex);
+
+      return {
+        ...previousForm,
+        modules: nextModules,
+      };
+    });
+  }
+
+  function toggleModuleExpanded(moduleIndex) {
+    const moduleItem = form.modules[moduleIndex];
+    const isExpanded = Boolean(moduleItem && moduleItem.expanded);
+
+    setModuleValue(moduleIndex, { expanded: !isExpanded });
+  }
+
+  function validateStep(stepNumber) {
+    const stepErrors = validateCourse(form, stepNumber);
+    setErrors(stepErrors);
+
+    const errorCount = Object.keys(stepErrors).length;
+    return errorCount === 0;
+  }
+
+  function saveCourseToStorage(options) {
+    const nextStatus = options && options.status ? options.status : form.status || 'draft';
+
+    const courses = loadList(COURSES_STORAGE_KEY);
+
+    const existingCourse = effectiveCourseId
+      ? courses.find((course) => course.id === effectiveCourseId)
+      : undefined;
+
+    const isNew = !existingCourse;
+
+    const nextId = existingCourse && existingCourse.id
+      ? existingCourse.id
+      : effectiveCourseId || makeId('course');
+
+    const createdBy = existingCourse && existingCourse.createdBy
+      ? existingCourse.createdBy
+      : 'ADMIN USER';
+
+    const nextCourseRecord = withTimestamps(
+      existingCourse,
       {
         ...form,
         id: nextId,
-        status: status || form.status || 'draft',
-        createdBy: existing?.createdBy || 'ADMIN USER',
+        status: nextStatus,
+        createdBy,
       },
       { isNew }
     );
-    saveList(coursesKey, upsertById(list, record));
-    setForm((prev) => ({ ...prev, id: nextId, status: record.status }));
-    return record;
-  };
 
-  const validateStep = (s) => {
-    const stepErrors = validateCourse(form, s);
-    setErrors(stepErrors);
-    return Object.keys(stepErrors).length === 0;
-  };
+    const nextList = upsertById(courses, nextCourseRecord);
+    saveList(COURSES_STORAGE_KEY, nextList);
 
-  if (shouldRedirect) return <Navigate to={redirectTo} replace />;
+    setForm((previousForm) => {
+      return {
+        ...previousForm,
+        id: nextId,
+        status: nextCourseRecord.status,
+      };
+    });
+
+    return nextCourseRecord;
+  }
+
+  function goToCoursesList() {
+    navigate('/courses');
+  }
+
+  function goToEditStep(courseId, stepNumber, options) {
+    const safeStep = getClampedCourseStepNumber(stepNumber);
+    const shouldReplaceHistory = Boolean(options && options.replace);
+
+    navigate(`/courses/${courseId}/edit/${safeStep}`, { replace: shouldReplaceHistory });
+  }
+
+  // Step 1 handlers
+  function handleCourseNameChange(event) {
+    setFieldValue('name', event.target.value);
+  }
+
+  function handleCourseCategoryChange(event) {
+    setFieldValue('category', event.target.value);
+  }
+
+  function handleTeacherNameChange(event) {
+    setFieldValue('teacher', event.target.value);
+  }
+
+  function handleDescriptionChange(event) {
+    setFieldValue('description', event.target.value);
+  }
+
+  function handleDemoVideoUploadClick() {
+    clickElementById('demoVideoInput');
+  }
+
+  function handleDemoVideoFileChange(event) {
+    const fileName = getFirstSelectedFileName(event);
+    setFieldValue('demoVideoName', fileName);
+  }
+
+  function handleStep1SaveDraftAndExit() {
+    saveCourseToStorage({ status: 'draft' });
+    goToCoursesList();
+  }
+
+  function handleStep1SaveAndProceed() {
+    const isValid = validateStep(1);
+    if (!isValid) {
+      return;
+    }
+
+    const saved = saveCourseToStorage({ status: 'draft' });
+
+    // Replace so we don't leave a "create" URL in history after the first save.
+    goToEditStep(saved.id, Math.min(LAST_STEP_NUMBER, currentStepNumber + 1), { replace: true });
+  }
+
+  // Step 2 handlers
+  function handleStep2Back() {
+    const saved = saveCourseToStorage({ status: 'draft' });
+    goToEditStep(saved.id, Math.max(FIRST_STEP_NUMBER, currentStepNumber - 1));
+  }
+
+  function handleStep2SaveAndProceed() {
+    const isValid = validateStep(2);
+    if (!isValid) {
+      return;
+    }
+
+    saveCourseToStorage({ status: 'active' });
+    goToCoursesList();
+  }
+
+  function handleModuleTitleChange(moduleIndex, event) {
+    const nextTitle = event.target.value;
+    setModuleValue(moduleIndex, { title: nextTitle });
+  }
+
+  function handleModuleVideoTitleChange(moduleIndex, event) {
+    const nextTitle = event.target.value;
+    setModuleValue(moduleIndex, { videoTitle: nextTitle });
+  }
+
+  function handleModuleStudyTitleChange(moduleIndex, event) {
+    const nextTitle = event.target.value;
+    setModuleValue(moduleIndex, { studyTitle: nextTitle });
+  }
+
+  function handleModuleVideoUploadClick(moduleIndex) {
+    clickElementById(`moduleVideo-${moduleIndex}`);
+  }
+
+  function handleModuleStudyUploadClick(moduleIndex) {
+    clickElementById(`moduleStudy-${moduleIndex}`);
+  }
+
+  function handleModuleVideoFileChange(moduleIndex, event) {
+    const fileName = getFirstSelectedFileName(event);
+    setModuleValue(moduleIndex, { videoFileName: fileName });
+  }
+
+  function handleModuleStudyFileChange(moduleIndex, event) {
+    const fileName = getFirstSelectedFileName(event);
+    setModuleValue(moduleIndex, { studyFileName: fileName });
+  }
+
+  if (shouldRedirectToStepOne) {
+    return <Navigate to={redirectTo} replace />;
+  }
 
   return (
     <div>
-      <div className="pageTitle">{id ? 'Edit Course' : 'Create Course'}</div>
+      <div className="pageTitle">{routeCourseId ? 'Edit Course' : 'Create Course'}</div>
 
-      <Stepper steps={steps} activeIndex={current - 1} />
+      <Stepper steps={COURSE_STEPS} activeIndex={currentStepNumber - 1} />
 
-      {current === 1 ? (
+      {currentStepNumber === 1 ? (
         <div className="card cardPad">
           <div className="formGrid2 createCourseGrid">
             <div className="field createCourseFieldFull">
@@ -147,7 +402,7 @@ export default function CreateCourse() {
               <input
                 className={errors.name ? 'input inputError' : 'input'}
                 value={form.name}
-                onChange={(e) => updateField('name', e.target.value)}
+                onChange={handleCourseNameChange}
               />
               {errors.name ? <div className="errorText">{errors.name}</div> : null}
             </div>
@@ -159,7 +414,7 @@ export default function CreateCourse() {
                 <button
                   className="btn btnSmall btnIcon"
                   type="button"
-                  onClick={() => document.getElementById('demoVideoInput')?.click()}
+                  onClick={handleDemoVideoUploadClick}
                 >
                   Upload file <IconUpload size={16} />
                 </button>
@@ -168,7 +423,7 @@ export default function CreateCourse() {
                   type="file"
                   accept="video/*"
                   className="hiddenFileInput"
-                  onChange={(e) => updateField('demoVideoName', e.target.files?.[0]?.name || '')}
+                  onChange={handleDemoVideoFileChange}
                 />
               </div>
               <div className="helper">Allowed Formats: .mp4, .mov, .avi, .mkv</div>
@@ -179,7 +434,7 @@ export default function CreateCourse() {
               <select
                 className={errors.category ? 'select inputError' : 'select'}
                 value={form.category}
-                onChange={(e) => updateField('category', e.target.value)}
+                onChange={handleCourseCategoryChange}
               >
                 <option value=""> </option>
                 <option value="finance">Finance</option>
@@ -193,7 +448,7 @@ export default function CreateCourse() {
               <input
                 className={errors.teacher ? 'input inputError' : 'input'}
                 value={form.teacher}
-                onChange={(e) => updateField('teacher', e.target.value)}
+                onChange={handleTeacherNameChange}
               />
               {errors.teacher ? <div className="errorText">{errors.teacher}</div> : null}
             </div>
@@ -203,195 +458,173 @@ export default function CreateCourse() {
               <textarea
                 className={errors.description ? 'textarea inputError' : 'textarea'}
                 value={form.description}
-                onChange={(e) => updateField('description', e.target.value)}
+                onChange={handleDescriptionChange}
               />
               {errors.description ? <div className="errorText">{errors.description}</div> : null}
-              <div className="createCourseWordCount">
-                Word limit {wordCount(form.description)} / 500
-              </div>
+              <div className="createCourseWordCount">Word limit {wordCount(form.description)} / 500</div>
             </div>
           </div>
 
           <div className="footerActions">
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                persist({ status: 'draft' });
-                navigate('/courses');
-              }}
-            >
+            <button className="btn" type="button" onClick={handleStep1SaveDraftAndExit}>
               Save as draft
             </button>
-            <button
-              className="btn btnAccent"
-              type="button"
-              onClick={() => {
-                if (!validateStep(1)) return;
-                const saved = persist({ status: 'draft' });
-                navigate(`/courses/${saved.id}/edit/${Math.min(2, current + 1)}`, { replace: true });
-              }}
-            >
+            <button className="btn btnAccent" type="button" onClick={handleStep1SaveAndProceed}>
               Save and Proceed
             </button>
           </div>
         </div>
       ) : null}
 
-      {current === 2 ? (
+      {currentStepNumber === 2 ? (
         <div className="card cardPad">
           <div className="createCourseNameHeader">{form.name || 'Course'}</div>
 
           {errors.modules ? <div className="errorText createCourseModulesError">{errors.modules}</div> : null}
 
-          {form.modules.map((m, idx) => (
-            <div className="card createCourseModuleCard" key={`module-${idx}`}>
-              <div className="moduleCard">
-                <div className="moduleHeader">
-                  <div className="moduleHeaderLeft">
-                    <span className="moduleBadge">{idx + 1}</span>
-                    <div className="moduleTitle">{m.title || `Module ${idx + 1}`}</div>
+          {form.modules.map((moduleItem, index) => {
+            const isExpanded = Boolean(moduleItem.expanded);
+            const moduleTitle = moduleItem.title || `Module ${index + 1}`;
+            const moduleTitleErrorKey = `modules.${index}.title`;
+            const moduleTitleError = errors[moduleTitleErrorKey];
+
+            const canDeleteModule = form.modules.length > 1;
+
+            return (
+              <div className="card createCourseModuleCard" key={`module-${index}`}>
+                <div className="moduleCard">
+                  <div className="moduleHeader">
+                    <div className="moduleHeaderLeft">
+                      <span className="moduleBadge">{index + 1}</span>
+                      <div className="moduleTitle">{moduleTitle}</div>
+                    </div>
+
+                    <div className="actions createCourseModuleActions">
+                      <button
+                        className="iconBtn"
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                        onClick={() => toggleModuleExpanded(index)}
+                        type="button"
+                      >
+                        {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                      </button>
+                      <button
+                        className="iconBtn"
+                        aria-label="Delete module"
+                        type="button"
+                        onClick={() => deleteModule(index)}
+                        disabled={!canDeleteModule}
+                        title={
+                          !canDeleteModule
+                            ? 'At least one module is required'
+                            : 'Delete module'
+                        }
+                      >
+                        <IconTrash size={16} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="actions createCourseModuleActions">
-                    <button
-                      className="iconBtn"
-                      aria-label={m.expanded ? 'Collapse' : 'Expand'}
-                      onClick={() => {
-                        updateModule(idx, { expanded: !m.expanded });
-                      }}
-                      type="button"
-                    >
-                      {m.expanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
-                    </button>
-                    <button
-                      className="iconBtn"
-                      aria-label="Delete module"
-                      type="button"
-                      onClick={() => deleteModule(idx)}
-                      disabled={form.modules.length === 1}
-                      title={form.modules.length === 1 ? 'At least one module is required' : 'Delete module'}
-                    >
-                      <IconTrash size={16} />
-                    </button>
-                  </div>
+                  {isExpanded ? (
+                    <div>
+                      <div className="formGrid2 createCourseModuleGrid">
+                        <div className="field createCourseFieldFull">
+                          <div className="label">Module Title</div>
+                          <input
+                            className={moduleTitleError ? 'input inputError' : 'input'}
+                            value={moduleItem.title}
+                            onChange={(event) => handleModuleTitleChange(index, event)}
+                          />
+                          {moduleTitleError ? <div className="errorText">{moduleTitleError}</div> : null}
+                        </div>
+
+                        <div className="field createCourseFieldFull">
+                          <div className="label">Video Title</div>
+                          <div className="fileRow">
+                            <input
+                              className="input fileRowInlineInput"
+                              value={moduleItem.videoTitle}
+                              onChange={(event) => handleModuleVideoTitleChange(index, event)}
+                            />
+                            <button
+                              className="btn btnSmall"
+                              type="button"
+                              onClick={() => handleModuleVideoUploadClick(index)}
+                            >
+                              Upload file
+                            </button>
+                            <input
+                              id={`moduleVideo-${index}`}
+                              type="file"
+                              accept="video/*"
+                              className="hiddenFileInput"
+                              onChange={(event) => handleModuleVideoFileChange(index, event)}
+                            />
+                          </div>
+                          {moduleItem.videoFileName ? (
+                            <div className="helper createCourseFileName">{moduleItem.videoFileName}</div>
+                          ) : null}
+                        </div>
+
+                        <div className="field createCourseFieldFull">
+                          <div className="label">Study Material Title</div>
+                          <div className="fileRow">
+                            <input
+                              className="input fileRowInlineInput"
+                              value={moduleItem.studyTitle}
+                              onChange={(event) => handleModuleStudyTitleChange(index, event)}
+                            />
+                            <button
+                              className="btn btnSmall"
+                              type="button"
+                              onClick={() => handleModuleStudyUploadClick(index)}
+                            >
+                              Upload file
+                            </button>
+                            <input
+                              id={`moduleStudy-${index}`}
+                              type="file"
+                              className="hiddenFileInput"
+                              onChange={(event) => handleModuleStudyFileChange(index, event)}
+                            />
+                          </div>
+                          {moduleItem.studyFileName ? (
+                            <div className="helper createCourseFileName">{moduleItem.studyFileName}</div>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="pills">
+                        <span className="pill">
+                          <IconPlus size={16} /> Video
+                        </span>
+                        <span className="pill">
+                          <IconPlus size={16} /> Study Material
+                        </span>
+                        <span className="pill">
+                          <IconPlus size={16} /> Assignment
+                        </span>
+                        <span className="pill">
+                          <IconPlus size={16} /> Quiz
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-
-                {m.expanded ? (
-                  <div>
-                    <div className="formGrid2 createCourseModuleGrid">
-                      <div className="field createCourseFieldFull">
-                        <div className="label">Module Title</div>
-                        <input
-                          className={errors[`modules.${idx}.title`] ? 'input inputError' : 'input'}
-                          value={m.title}
-                          onChange={(e) => updateModule(idx, { title: e.target.value })}
-                        />
-                        {errors[`modules.${idx}.title`] ? (
-                          <div className="errorText">{errors[`modules.${idx}.title`]}</div>
-                        ) : null}
-                      </div>
-                      <div className="field createCourseFieldFull">
-                        <div className="label">Video Title</div>
-                        <div className="fileRow">
-                          <input
-                            className="input fileRowInlineInput"
-                            value={m.videoTitle}
-                            onChange={(e) => updateModule(idx, { videoTitle: e.target.value })}
-                          />
-                          <button
-                            className="btn btnSmall"
-                            type="button"
-                            onClick={() => document.getElementById(`moduleVideo-${idx}`)?.click()}
-                          >
-                            Upload file
-                          </button>
-                          <input
-                            id={`moduleVideo-${idx}`}
-                            type="file"
-                            accept="video/*"
-                            className="hiddenFileInput"
-                            onChange={(e) => updateModule(idx, { videoFileName: e.target.files?.[0]?.name || '' })}
-                          />
-                        </div>
-                        {m.videoFileName ? <div className="helper createCourseFileName">{m.videoFileName}</div> : null}
-                      </div>
-
-                      <div className="field createCourseFieldFull">
-                        <div className="label">Study Material Title</div>
-                        <div className="fileRow">
-                          <input
-                            className="input fileRowInlineInput"
-                            value={m.studyTitle}
-                            onChange={(e) => updateModule(idx, { studyTitle: e.target.value })}
-                          />
-                          <button
-                            className="btn btnSmall"
-                            type="button"
-                            onClick={() => document.getElementById(`moduleStudy-${idx}`)?.click()}
-                          >
-                            Upload file
-                          </button>
-                          <input
-                            id={`moduleStudy-${idx}`}
-                            type="file"
-                            className="hiddenFileInput"
-                            onChange={(e) => updateModule(idx, { studyFileName: e.target.files?.[0]?.name || '' })}
-                          />
-                        </div>
-                        {m.studyFileName ? <div className="helper createCourseFileName">{m.studyFileName}</div> : null}
-                      </div>
-                    </div>
-
-                    <div className="pills">
-                      <span className="pill">
-                        <IconPlus size={16} /> Video
-                      </span>
-                      <span className="pill">
-                        <IconPlus size={16} /> Study Material
-                      </span>
-                      <span className="pill">
-                        <IconPlus size={16} /> Assignment
-                      </span>
-                      <span className="pill">
-                        <IconPlus size={16} /> Quiz
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
-          <button
-            className="btn btnDark btnIcon"
-            type="button"
-            onClick={addModule}
-          >
+          <button className="btn btnDark btnIcon" type="button" onClick={addModule}>
             <IconPlus size={18} />
             Add New Module
           </button>
 
           <div className="footerActions createCourseFooterTop">
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                const saved = persist({ status: 'draft' });
-                navigate(`/courses/${saved.id}/edit/${Math.max(1, current - 1)}`);
-              }}
-            >
+            <button className="btn" type="button" onClick={handleStep2Back}>
               Back
             </button>
-            <button
-              className="btn btnAccent"
-              type="button"
-              onClick={() => {
-                if (!validateStep(2)) return;
-                persist({ status: 'active' });
-                navigate('/courses');
-              }}
-            >
+            <button className="btn btnAccent" type="button" onClick={handleStep2SaveAndProceed}>
               Save and Proceed
             </button>
           </div>
