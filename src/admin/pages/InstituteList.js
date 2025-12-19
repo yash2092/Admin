@@ -8,42 +8,99 @@ import '../styles/admin/ui/Buttons.css';
 import '../styles/admin/ui/Tables.css';
 import '../styles/admin/pages/InstituteList.css';
 
-function formatDate(iso) {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    // Use a stable, readable format (not locale-dependent) so the table doesn't look different per device.
-    return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
-  } catch {
-    return '—';
-  }
+const EMPTY_CELL = '—';
+
+// Use one shared formatter so we don't recreate it on every render.
+// WHY: keeps formatting stable across devices and avoids small performance churn.
+const createdOnDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+});
+
+function formatCreatedOnDate(isoString) {
+  // The table layout should remain stable even when fields are missing or partially entered.
+  // Returning a single placeholder avoids "jumpy" rows (e.g. empty vs non-empty widths).
+  if (!isoString) return EMPTY_CELL;
+
+  const date = new Date(isoString);
+  const isValidDate = Number.isFinite(date.getTime());
+  if (!isValidDate) return EMPTY_CELL;
+
+  return createdOnDateFormatter.format(date);
+}
+
+function formatInstituteId(id) {
+  // IDs can be long; we display only the last 6 characters for readability.
+  // WHY: keeps the column width consistent and scan-friendly.
+  const rawId = String(id || '');
+  const lastSixChars = rawId.slice(-6);
+  return lastSixChars.toUpperCase();
 }
 
 export default function InstituteList() {
   const navigate = useNavigate();
-  const institutesKey = useMemo(() => storageKey('institutes'), []);
+  // Memoize the storage key so effects below don't re-run unnecessarily.
+  const institutesStorageKey = useMemo(() => storageKey('institutes'), []);
+
   const [query, setQuery] = useState('');
-  const [rows, setRows] = useState(() => loadList(institutesKey));
+  const [allInstitutes, setAllInstitutes] = useState(() => loadList(institutesStorageKey));
 
   useEffect(() => {
-    const refresh = () => setRows(loadList(institutesKey));
-    window.addEventListener('storage', refresh);
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      window.removeEventListener('focus', refresh);
+    // WHY: institutes can be updated from other tabs or after coming back to this tab.
+    // We re-read storage to keep the list accurate without requiring a full reload.
+    const refreshFromStorage = () => {
+      const latestInstitutes = loadList(institutesStorageKey);
+      setAllInstitutes(latestInstitutes);
     };
-  }, [institutesKey]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => {
-      const hay = `${r.name || ''} ${r.trademark || ''} ${r.gst || ''}`.toLowerCase();
-      return hay.includes(q);
+    window.addEventListener('storage', refreshFromStorage);
+    window.addEventListener('focus', refreshFromStorage);
+
+    return () => {
+      window.removeEventListener('storage', refreshFromStorage);
+      window.removeEventListener('focus', refreshFromStorage);
+    };
+  }, [institutesStorageKey]);
+
+  const visibleInstitutes = useMemo(() => {
+    const trimmedQuery = query.trim();
+    const normalizedQuery = trimmedQuery.toLowerCase();
+
+    // If the user hasn't typed anything, show everything.
+    if (!normalizedQuery) return allInstitutes;
+
+    return allInstitutes.filter((institute) => {
+      // Build a single string to search across common fields.
+      // WHY: simple and predictable for users; no fancy ranking logic.
+      const partsToSearch = [
+        institute.name || '',
+        institute.trademark || '',
+        institute.gst || '',
+      ];
+
+      const searchableText = partsToSearch.join(' ').toLowerCase();
+      return searchableText.includes(normalizedQuery);
     });
-  }, [query, rows]);
+  }, [allInstitutes, query]);
+
+  const goToCreateInstitute = () => {
+    // The Create page redirects to step 1, so we can navigate directly there.
+    navigate('/institutes/create/1');
+  };
+
+  const goToEditInstitute = (instituteId) => {
+    navigate(`/institutes/${instituteId}/edit/1`);
+  };
+
+  const deleteInstitute = (instituteId) => {
+    const userConfirmed = window.confirm('Delete this institute? This cannot be undone.');
+    if (!userConfirmed) return;
+
+    const nextInstitutes = removeById(allInstitutes, instituteId);
+    saveList(institutesStorageKey, nextInstitutes);
+    setAllInstitutes(nextInstitutes);
+  };
 
   return (
     <div>
@@ -51,13 +108,21 @@ export default function InstituteList() {
 
       <div className="row instituteListSearchRow">
         <div className="searchWrap">
-          <input className="search" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            className="search"
+            placeholder="Search"
+            value={query}
+            onChange={(e) => {
+              const nextQuery = e.target.value;
+              setQuery(nextQuery);
+            }}
+          />
           <span className="searchIcon" aria-hidden="true">
             <IconSearch size={18} />
           </span>
         </div>
 
-        <button className="btn btnDark btnIcon" onClick={() => navigate('/institutes/create/1')}>
+        <button className="btn btnDark btnIcon" onClick={goToCreateInstitute}>
           <IconPlus size={18} />
           Create Institute
         </button>
@@ -66,8 +131,9 @@ export default function InstituteList() {
       <div className="card">
         <div className="tableWrap">
           <table className="table instituteListTable">
-            {/* `colgroup` + `table-layout: fixed` keeps header/row columns perfectly aligned,
-               even when users enter long text or when data updates live. */}
+            {/* WHY `colgroup` + `table-layout: fixed`:
+               - Guarantees headers and rows share the exact same column widths.
+               - Prevents long text from stretching columns and misaligning the table. */}
             <colgroup>
               <col className="instituteListColId" />
               <col className="instituteListColName" />
@@ -87,39 +153,39 @@ export default function InstituteList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {visibleInstitutes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="instituteListEmptyCell">
                     No institutes found.
                   </td>
                 </tr>
               ) : (
-                filtered.map((r) => (
-                  <tr key={r.id}>
-                    <td className="instituteListIdCol">{String(r.id || '').slice(-6).toUpperCase()}</td>
+                visibleInstitutes.map((institute) => (
+                  <tr key={institute.id}>
+                    <td className="instituteListIdCol">{formatInstituteId(institute.id)}</td>
                     <td className="instituteListNameCol">
-                      <div className="cellTruncate" title={r.name || ''}>
-                        {r.name || '—'}
+                      <div className="cellTruncate" title={institute.name || ''}>
+                        {institute.name || EMPTY_CELL}
                       </div>
                     </td>
                     <td className="instituteListTrademarkCol">
-                      <div className="cellTruncate" title={r.trademark || ''}>
-                        {r.trademark || '—'}
+                      <div className="cellTruncate" title={institute.trademark || ''}>
+                        {institute.trademark || EMPTY_CELL}
                       </div>
                     </td>
                     <td className="instituteListCreatedByCol">
-                      <div className="cellTruncate" title={r.createdBy || 'ADMIN USER'}>
-                        {r.createdBy || 'ADMIN USER'}
+                      <div className="cellTruncate" title={institute.createdBy || 'ADMIN USER'}>
+                        {institute.createdBy || 'ADMIN USER'}
                       </div>
                     </td>
-                    <td className="instituteListCreatedOnCol">{formatDate(r.createdAt)}</td>
+                    <td className="instituteListCreatedOnCol">{formatCreatedOnDate(institute.createdAt)}</td>
                     <td className="instituteListActionCol">
                       <div className="actions">
                         <button
                           className="iconBtn"
                           aria-label="Edit"
                           type="button"
-                          onClick={() => navigate(`/institutes/${r.id}/edit/1`)}
+                          onClick={() => goToEditInstitute(institute.id)}
                         >
                           <IconPencil size={16} />
                         </button>
@@ -127,13 +193,7 @@ export default function InstituteList() {
                           className="iconBtn"
                           aria-label="Delete"
                           type="button"
-                          onClick={() => {
-                            const ok = window.confirm('Delete this institute? This cannot be undone.');
-                            if (!ok) return;
-                            const next = removeById(rows, r.id);
-                            saveList(institutesKey, next);
-                            setRows(next);
-                          }}
+                          onClick={() => deleteInstitute(institute.id)}
                         >
                           <IconTrash size={16} />
                         </button>
@@ -148,7 +208,7 @@ export default function InstituteList() {
 
         <div className="pager">
           <span>
-            Showing {filtered.length} of {rows.length}
+            Showing {visibleInstitutes.length} of {allInstitutes.length}
           </span>
         </div>
       </div>

@@ -3,12 +3,25 @@ import { NavLink } from 'react-router-dom';
 import { IconBook, IconBuilding, IconList, IconPlus } from '../ui/Icons';
 import '../styles/admin/layout/Sidebar.css';
 
+function getSideLinkClassName({ isActive }) {
+  // WHY: We want exactly one highlighted item, driven by the URL.
+  // React Router tells us whether a link matches the current route via `isActive`.
+  if (isActive) return 'sideItem sideItemActive';
+  return 'sideItem';
+}
+
 function SideLink({ to, icon, children, onNavigate, end = false }) {
+  // `end` means "match exactly".
+  //
+  // WHY:
+  // - Without `end`, a link like "/institutes" is also considered active for
+  //   "/institutes/create" because the URL starts with "/institutes".
+  // - Our UI requirement is: highlight ONLY the currently active menu item.
   return (
     <NavLink
       to={to}
       end={end}
-      className={({ isActive }) => (isActive ? 'sideItem sideItemActive' : 'sideItem')}
+      className={getSideLinkClassName}
       onClick={onNavigate}
     >
       <span className="sideIcon">{icon}</span>
@@ -32,11 +45,13 @@ export default function Sidebar({ onNavigate }) {
 
       <div className="sideSectionTitle">Institute Portfolio</div>
       <nav className="sideNav">
-        {/* `end` ensures "/institutes" is NOT active on "/institutes/create" */}
+        {/* WHY `end`: "/institutes" should not remain active on "/institutes/create". */}
         <SideLink to="/institutes" end icon={<IconBuilding size={18} />} onNavigate={onNavigate}>
           Institute List
         </SideLink>
-        {/* Keep the sidebar route stable; the page itself redirects to step 1. */}
+        {/* WHY no step in the sidebar URL:
+           The Create page already redirects /create -> /create/1.
+           Keeping the sidebar link stable makes the active highlight predictable. */}
         <SideLink to="/institutes/create" icon={<IconPlus size={18} />} onNavigate={onNavigate}>
           Create Institute
         </SideLink>
@@ -46,11 +61,11 @@ export default function Sidebar({ onNavigate }) {
 
       <div className="sideSectionTitle">Courses</div>
       <nav className="sideNav">
-        {/* `end` ensures "/courses" is NOT active on "/courses/create" */}
+        {/* WHY `end`: "/courses" should not remain active on "/courses/create". */}
         <SideLink to="/courses" end icon={<IconList size={18} />} onNavigate={onNavigate}>
           Course List
         </SideLink>
-        {/* Keep the sidebar route stable; the page itself redirects to step 1. */}
+        {/* Same idea as institutes: stable URL for consistent active highlighting. */}
         <SideLink to="/courses/create" icon={<IconBook size={18} />} onNavigate={onNavigate}>
           Create Course
         </SideLink>
